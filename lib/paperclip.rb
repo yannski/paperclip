@@ -26,6 +26,7 @@
 # See the +has_attached_file+ documentation for more details.
 
 require 'tempfile'
+require 'paperclip/definition'
 require 'paperclip/upfile'
 require 'paperclip/iostream'
 require 'paperclip/geometry'
