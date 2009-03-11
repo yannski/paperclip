@@ -2,7 +2,7 @@ require 'test/helper'
 
 class DefinitionTest < Test::Unit::TestCase
   context "A definition" do
-    [:url, :path, :default_path, :default_style, :whiny_processing].each do |field|
+    [:url, :path, :default_url, :default_style, :whiny_processing].each do |field|
       should "accept a #{field.inspect} a parameter and be able to return it" do
         d = Paperclip::Definition.new(field => "my_#{field}")
         assert_equal "my_#{field}", d.send(field)
@@ -15,6 +15,16 @@ class DefinitionTest < Test::Unit::TestCase
     should "normalize hashes passed as styles to a standard format" do
       d = Paperclip::Definition.new(:styles => {:thumb => {}})
       assert_equal [:thumbnail], d.style(:thumb).processors
+    end
+    should "return a Style object corresponding to the style key merged with the all_styles values" do
+      d = Paperclip::Definition.new(:all_styles => {:three => :four},
+                                    :styles => {:thumb => {:one => :two}})
+      assert_equal :two, d.style(:thumb).one
+      assert_equal :four, d.style(:thumb).three
+    end
+    should "return a Style object corresponding to the style key with the right values" do
+      d = Paperclip::Definition.new(:styles => {:thumb => {:one => :two}})
+      assert_equal :two, d.style(:thumb).one
     end
     context "returning a Storage object on call to #storage" do
       setup{ @definition = Paperclip::Definition.new }
@@ -50,6 +60,31 @@ class DefinitionTest < Test::Unit::TestCase
       end
       should "return the permissions when asked" do
         assert_equal({'key' => 'value'}, @definition.storage.permissions)
+      end
+    end
+
+    context "created with no options" do
+      setup { @definition = Paperclip::Definition.new }
+      [:url, :path, :default_url, :default_style, :whiny_processing].each do |field|
+        should "have the right default value of #{field}" do
+          assert_equal Paperclip::Definition.default_options[field], @definition.send(field)
+        end
+      end
+    end
+
+    context "created with no options and different defaults" do
+      setup do
+        Paperclip::Definition.default_options[:path]             = 1
+        Paperclip::Definition.default_options[:url]              = 2
+        Paperclip::Definition.default_options[:default_style]    = 3
+        Paperclip::Definition.default_options[:default_url]      = 4
+        Paperclip::Definition.default_options[:whiny_processing] = 5
+        @definition = Paperclip::Definition.new
+      end
+      [:url, :path, :default_url, :default_style, :whiny_processing].each do |field|
+        should "have the right default value of #{field}" do
+          assert_equal Paperclip::Definition.default_options[field], @definition.send(field)
+        end
       end
     end
   end

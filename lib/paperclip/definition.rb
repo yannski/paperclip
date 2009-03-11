@@ -1,22 +1,28 @@
 module Paperclip
   class Definition
-    attr_accessor :url, :path, :default_style, :default_path, :whiny_processing,
+    attr_accessor :url, :path, :default_style, :default_url, :whiny_processing,
                   :storage, :storage_method
 
-    def initialize options = {}
-      @url = options[:url]
-      @path = options[:path]
-      @default_style = options[:default_style]
-      @default_path = options[:default_path]
-      @whiny_processing = options[:whiny_processing]
-      @styles = options[:styles]
+    def self.default_options
+      @default_options ||= {}
+    end
 
-      @storage_method = options[:storage] || :filesystem
-      @storage = Storage.for(@storage_method, options)
+    def initialize options = {}
+      defaults          = self.class.default_options
+      @url              = options[:url]              || defaults[:url]
+      @path             = options[:path]             || defaults[:path]
+      @default_style    = options[:default_style]    || defaults[:default_style]
+      @default_url      = options[:default_url]      || defaults[:default_url]
+      @whiny_processing = options[:whiny_processing] || defaults[:whiny_processing]
+      @storage_method   = options[:storage]          || :filesystem
+      @all_styles       = options[:all_styles]       || {}
+      @style_hashes     = options[:styles]
+      @styles           = {}
+      @storage          = Storage.for(@storage_method, options)
     end
 
     def style name
-      Style.new
+      @styles[name] ||= Style.new(@all_styles.merge(@style_hashes[name]))
     end
 
     class Options
