@@ -65,7 +65,7 @@ spec = Gem::Specification.new do |s|
   s.rdoc_options << '--line-numbers' << '--inline-source'
   s.requirements << "ImageMagick"
   s.add_runtime_dependency 'right_aws'
-  s.add_development_dependency 'thoughtbot-shoulda'
+  s.add_development_dependency 'thoughtbot-shoulda', '>= 2.9.0'
   s.add_development_dependency 'mocha'
 end
  
