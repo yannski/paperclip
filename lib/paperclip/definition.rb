@@ -85,10 +85,11 @@ module Paperclip
         def initialize options = {}
           self.method      = :s3
           self.bucket      = options.delete(:bucket)
-          self.permissions = options.delete(:s3_permissions)
-          self.headers     = options.delete(:s3_headers)
+          self.credentials = options.delete(:credentials)
+          self.permissions = options.delete(:s3_permissions) || 'public-read'
+          self.headers     = options.delete(:s3_headers)     || {}
           self.host_alias  = options.delete(:s3_host_alias)
-          self.protocol    = options.delete(:s3_protocol)
+          self.protocol    = options.delete(:s3_protocol)    || (permissions == 'public-read' ? 'http' : 'https')
           super(options)
         end
 
