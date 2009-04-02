@@ -58,8 +58,8 @@ class DefinitionTest < Test::Unit::TestCase
       should "return the protocol when asked" do
         assert_equal "https", @definition.storage.protocol
       end
-      should "return the permissions when asked" do
-        assert_equal({'key' => 'value'}, @definition.storage.permissions)
+      should "return the credentials when asked" do
+        assert_equal({'key' => 'value'}, @definition.storage.credentials)
       end
     end
 

@@ -4,6 +4,7 @@ gem 'thoughtbot-shoulda', ">= 2.9.0"
 require 'shoulda'
 require 'mocha'
 require 'tempfile'
+require 'aws/s3'
 
 gem 'sqlite3-ruby'
 

@@ -93,7 +93,7 @@ module Paperclip
           super(options)
         end
 
-        def permissions= yaml
+        def credentials= yaml
           case yaml
           when Hash then @permissions = yaml
           when IO, StringIO then @permissions = YAML.load(yaml)
