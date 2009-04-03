@@ -62,7 +62,7 @@ module Paperclip
       def write path, data, options = {}
         data.rewind if data.respond_to?(:rewind)
         begin
-          AWS::S3::S3Object.store(path, data.read, bucket, options)
+          AWS::S3::S3Object.store(path, data.read, bucket, options[:headers] || {})
         rescue AWS::S3::ResponseError => e
           # OMG Error
         end
@@ -70,8 +70,6 @@ module Paperclip
 
       def delete path
         begin
-          p path
-          p bucket
           AWS::S3::S3Object.delete(path, bucket)
         rescue AWS::S3::ResponseError => e
           # OMG Error

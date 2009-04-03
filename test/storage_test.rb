@@ -39,7 +39,7 @@ class StorageTest < Test::Unit::TestCase
         )
         @path = File.join(File.dirname(__FILE__), "fixtures", "hello_world.txt")
         @file = Tempfile.new("paperclip-test")
-        @file.puts "..."
+        @file.puts "Hello, World!"
         @file.rewind
         AWS::S3::Base.stubs(:establish_connection!)
         @storage = Paperclip::Storage.for @config
@@ -47,7 +47,7 @@ class StorageTest < Test::Unit::TestCase
       should "save a file when given a file and a path" do
         AWS::S3::S3Object.
           expects(:store).
-          with(@path, "Hello, World!", "bucket", :content_type => 'text/plain')
+          with(@path, "Hello, World!\n", "bucket", :content_type => 'text/plain')
         @storage.write(@path, @file, :headers => {:content_type => 'text/plain'})
       end
       should "delete a file when given a path" do

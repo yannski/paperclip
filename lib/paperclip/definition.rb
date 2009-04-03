@@ -75,30 +75,40 @@ module Paperclip
 
       class Filesystem < Storage
         def initialize options = {}
-          self.method = :filesystem
+          self.storage_method = :filesystem
           super(options)
         end
       end
 
       class S3 < Storage
-        attr_reader :permissions
+        attr_reader :permissions, :credentials
         def initialize options = {}
-          self.method      = :s3
-          self.bucket      = options.delete(:bucket)
-          self.credentials = options.delete(:credentials)
-          self.permissions = options.delete(:s3_permissions) || 'public-read'
-          self.headers     = options.delete(:s3_headers)     || {}
-          self.host_alias  = options.delete(:s3_host_alias)
-          self.protocol    = options.delete(:s3_protocol)    || (permissions == 'public-read' ? 'http' : 'https')
+          self.storage_method = :s3
+          self.bucket             = options.delete(:bucket)
+          self.credentials        = options.delete(:s3_credentials)
+          self.permissions        = options.delete(:s3_permissions)        || 'public-read'
+          self.headers            = options.delete(:s3_headers)            || {}
+          self.connection_options = options.delete(:s3_connection_options) || {}
+          self.host_alias         = options.delete(:s3_host_alias)
+          self.protocol           = options.delete(:s3_protocol)           || (permissions == 'public-read' ? 'http' : 'https')
           super(options)
         end
 
         def credentials= yaml
-          case yaml
-          when Hash then @permissions = yaml
-          when IO, StringIO then @permissions = YAML.load(yaml)
-          when String then @permissions = YAML.load_file(yaml)
+          yaml ||= {}
+          if yaml.is_a? String
+            @credentials = YAML.load_file(yaml)
+          elsif yaml.respond_to? :read
+            @credentials = YAML.load(yaml.read)
+          else
+            @credentials = yaml
           end
+          
+          if Object.const_defined?("RAILS_ENV") && @credentials.key?(RAILS_ENV)
+            @credentials = @credentials[RAILS_ENV]
+          end
+          @credentials = {:access_key_id => @credentials['access_key_id'] || @credentials[:access_key_id],
+                          :secret_access_key => @credentials['secret_access_key'] || @credentials[:secret_access_key]}
         end
       end
     end

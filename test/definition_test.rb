@@ -32,25 +32,35 @@ class DefinitionTest < Test::Unit::TestCase
         assert_kind_of Paperclip::Definition::Storage, @definition.storage
       end
       should "return the default method" do
-        assert_equal :filesystem, @definition.storage.method
+        assert_equal :filesystem, @definition.storage.storage_method
       end
     end
     context "returning a Storage object configured for S3" do
-      setup{ @definition = Paperclip::Definition.new :storage => :s3,
-                                                     :s3_permissions => StringIO.new("key: value"),
-                                                     :s3_options => {:one => :two},
-                                                     :s3_protocol => "https",
-                                                     :s3_headers => {'Content-type' => 'text/plain'},
-                                                     :s3_host_alias => "test.example.com",
-                                                     :bucket => "bucket" }
+      setup do
+        @credentials = Tempfile.new("s3-permissions")
+        @credentials.write(<<-YAML)
+        test:
+          access_key_id: A1234
+          secret_access_key: ABCDE
+        YAML
+        @credentials.rewind
+        @definition = Paperclip::Definition.new :storage => :s3,
+                                                :s3_credentials => @credentials,
+                                                :s3_permissions => "private",
+                                                :s3_options => {:one => :two},
+                                                :s3_protocol => "https",
+                                                :s3_headers => {'something' => 'something/else'},
+                                                :s3_host_alias => "test.example.com",
+                                                :bucket => "bucket"
+      end
       should "return a Storage object with an S3 method" do
-        assert_equal :s3, @definition.storage.method
+        assert_equal :s3, @definition.storage.storage_method
       end
       should "return the bucket when asked" do
         assert_equal "bucket", @definition.storage.bucket
       end
       should "return the headers when asked" do
-        assert_equal({'Content-type' => 'text/plain'}, @definition.storage.headers)
+        assert_equal({'something' => 'something/else'}, @definition.storage.headers)
       end
       should "return the host_alias when asked" do
         assert_equal "test.example.com", @definition.storage.host_alias
@@ -58,8 +68,11 @@ class DefinitionTest < Test::Unit::TestCase
       should "return the protocol when asked" do
         assert_equal "https", @definition.storage.protocol
       end
+      should "return the permissions when asked" do
+        assert_equal("private", @definition.storage.permissions)
+      end
       should "return the credentials when asked" do
-        assert_equal({'key' => 'value'}, @definition.storage.credentials)
+        assert_equal({:access_key_id => "A1234", :secret_access_key => "ABCDE"}, @definition.storage.credentials)
       end
     end
 

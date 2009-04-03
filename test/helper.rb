@@ -18,6 +18,7 @@ end
 
 ROOT       = File.join(File.dirname(__FILE__), '..')
 RAILS_ROOT = ROOT
+RAILS_ENV  = "test"
 
 $LOAD_PATH << File.join(ROOT, 'lib')
 $LOAD_PATH << File.join(ROOT, 'lib', 'paperclip')
