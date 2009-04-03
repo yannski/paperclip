@@ -84,13 +84,13 @@ module Paperclip
         attr_reader :permissions, :credentials
         def initialize options = {}
           self.storage_method = :s3
-          self.bucket             = options.delete(:bucket)
-          self.credentials        = options.delete(:s3_credentials)
-          self.permissions        = options.delete(:s3_permissions)        || 'public-read'
-          self.headers            = options.delete(:s3_headers)            || {}
-          self.connection_options = options.delete(:s3_connection_options) || {}
-          self.host_alias         = options.delete(:s3_host_alias)
-          self.protocol           = options.delete(:s3_protocol)           || (permissions == 'public-read' ? 'http' : 'https')
+          self.bucket      = options.delete(:bucket)
+          self.credentials = options.delete(:s3_credentials)
+          self.permissions = options.delete(:s3_permissions) || 'public-read'
+          self.headers     = options.delete(:s3_headers)     || {}
+          self.options     = options.delete(:s3_options)     || {}
+          self.host_alias  = options.delete(:s3_host_alias)
+          self.protocol    = options.delete(:s3_protocol)    || (permissions == 'public-read' ? 'http' : 'https')
           super(options)
         end
 

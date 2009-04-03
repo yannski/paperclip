@@ -51,12 +51,12 @@ module Paperclip
     end
 
     class S3 < Storage
-      attr_accessor :credentials, :connection_options, :bucket
+      attr_accessor :credentials, :options, :bucket
       def initialize options
-        @connection_options = options.connection_options
-        @credentials        = options.credentials
-        @bucket             = options.bucket
-        AWS::S3::Base.establish_connection!(@connection_options.merge(@credentials))
+        @options     = options.options
+        @credentials = options.credentials
+        @bucket      = options.bucket
+        AWS::S3::Base.establish_connection!(@options.merge(@credentials))
       end
 
       def write path, data, options = {}

@@ -71,6 +71,9 @@ class DefinitionTest < Test::Unit::TestCase
       should "return the permissions when asked" do
         assert_equal("private", @definition.storage.permissions)
       end
+      should "return the options when asked" do
+        assert_equal({:one => :two}, @definition.storage.options)
+      end
       should "return the credentials when asked" do
         assert_equal({:access_key_id => "A1234", :secret_access_key => "ABCDE"}, @definition.storage.credentials)
       end
