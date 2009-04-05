@@ -1,4 +1,6 @@
 module Paperclip
+  class StorageError < Exception; end
+
   class Storage
     def self.for options
       storage_method = options.storage_method || :filesystem
@@ -10,7 +12,7 @@ module Paperclip
       @options = options
     end
 
-    def write path, file, options = {}
+    def write path, file, attachment
     end
 
     def delete path
@@ -20,7 +22,7 @@ module Paperclip
     end
 
     class Filesystem < Storage
-      def write path, data, options = {}
+      def write path, data, attachment
         data.close if data.respond_to? :close
         FileUtils.mkdir_p(File.dirname(path))
         FileUtils.mv(data.path, path)
@@ -51,18 +53,20 @@ module Paperclip
     end
 
     class S3 < Storage
-      attr_accessor :credentials, :options, :bucket
+      attr_accessor :credentials, :options, :bucket, :headers
       def initialize options
         @options     = options.options
         @credentials = options.credentials
         @bucket      = options.bucket
+        @headers     = options.headers
         AWS::S3::Base.establish_connection!(@options.merge(@credentials))
       end
 
-      def write path, data, options = {}
+      def write path, data, attachment
         data.rewind if data.respond_to?(:rewind)
+        s3_headers = {:content_type => attachment.content_type}.merge(headers)
         begin
-          AWS::S3::S3Object.store(path, data.read, bucket, options[:headers] || {})
+          AWS::S3::S3Object.store(path, data.read, bucket, s3_headers)
         rescue AWS::S3::ResponseError => e
           # OMG Error
         end

@@ -10,9 +10,10 @@ class StorageTest < Test::Unit::TestCase
         @file = Tempfile.new("paperclip-test")
         @file.puts "..."
         @file.rewind
+        @attachment = mock
       end
       should "save a file when given a file and a path" do
-        @storage.write(@path, @file)
+        @storage.write(@path, @file, @attachment)
         assert_equal "...\n", IO.read(@path)
       end
       should "delete the file when given the path" do
@@ -42,13 +43,15 @@ class StorageTest < Test::Unit::TestCase
         @file.puts "Hello, World!"
         @file.rewind
         AWS::S3::Base.stubs(:establish_connection!)
+        @attachment = mock
         @storage = Paperclip::Storage.for @config
       end
       should "save a file when given a file and a path" do
         AWS::S3::S3Object.
           expects(:store).
-          with(@path, "Hello, World!\n", "bucket", :content_type => 'text/plain')
-        @storage.write(@path, @file, :headers => {:content_type => 'text/plain'})
+          with(@path, "Hello, World!\n", "bucket", {:content_type => "text/plain"})
+        @attachment.expects(:content_type).returns("text/plain")
+        @storage.write(@path, @file, @attachment)
       end
       should "delete a file when given a path" do
         AWS::S3::S3Object.expects(:delete).with(@path, "bucket")
