@@ -10,16 +10,16 @@ module Paperclip
     # unless specified. Thumbnail creation will raise no errors unless
     # +whiny+ is true (which it is, by default. If +convert_options+ is
     # set, the options will be appended to the convert command upon image conversion 
-    def initialize file, options = {}, attachment = nil
+    def initialize file, definition, attachment = nil
       super
-      geometry          = options[:geometry]
+      geometry          = definition.geometry
       @file             = file
       @crop             = geometry[-1,1] == '#'
       @target_geometry  = Geometry.parse geometry
       @current_geometry = Geometry.from_file @file
-      @convert_options  = options[:convert_options]
-      @whiny            = options[:whiny].nil? ? true : options[:whiny]
-      @format           = options[:format]
+      @convert_options  = definition.convert_options
+      @whiny            = definition.whiny.nil? ? true : definition.whiny
+      @format           = definition.format
 
       @current_format   = File.extname(@file.path)
       @basename         = File.basename(@file.path, @current_format)
