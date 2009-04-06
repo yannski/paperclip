@@ -1,5 +1,16 @@
 module Paperclip
-  class StorageError < Exception; end
+  class StorageError < Exception;
+    attr_reader :exception
+    def initialize exception_or_message
+      if exception_or_message.is_a? String
+        @message = exception_or_message
+      else
+        @exception = exception_or_message
+        @message = @exception.message
+      end
+      super
+    end
+  end
 
   class Storage
     def self.for options
@@ -12,7 +23,7 @@ module Paperclip
       @options = options
     end
 
-    def write path, file, attachment
+    def write path, file, attachment = nil
     end
 
     def delete path
@@ -22,7 +33,7 @@ module Paperclip
     end
 
     class Filesystem < Storage
-      def write path, data, attachment
+      def write path, data, attachment = nil
         data.close if data.respond_to? :close
         FileUtils.mkdir_p(File.dirname(path))
         FileUtils.mv(data.path, path)
@@ -34,6 +45,8 @@ module Paperclip
           FileUtils.rm(path) if File.exist?(path)
         rescue Errno::ENOENT => e
           # ignore file-not-found, let everything else pass
+        rescue SystemCallError => e
+          Paperclip::StorageError.new(e)
         end
         begin
           while(true)
@@ -62,13 +75,13 @@ module Paperclip
         AWS::S3::Base.establish_connection!(@options.merge(@credentials))
       end
 
-      def write path, data, attachment
+      def write path, data, attachment = nil
         data.rewind if data.respond_to?(:rewind)
         s3_headers = {:content_type => attachment.content_type}.merge(headers)
         begin
           AWS::S3::S3Object.store(path, data.read, bucket, s3_headers)
         rescue AWS::S3::ResponseError => e
-          # OMG Error
+          raise Paperclip::StorageError.new(e)
         end
       end
 
@@ -76,7 +89,7 @@ module Paperclip
         begin
           AWS::S3::S3Object.delete(path, bucket)
         rescue AWS::S3::ResponseError => e
-          # OMG Error
+          raise Paperclip::StorageError.new(e)
         end
       end
 
