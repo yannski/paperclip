@@ -43,7 +43,8 @@ class ThumbnailTest < Test::Unit::TestCase
     ].each do |args|
       context "being thumbnailed with a geometry of #{args[0]}" do
         setup do
-          @thumb = Paperclip::Thumbnail.new(@file, :geometry => args[0])
+          @style = Paperclip::Definition::Style.new(:geometry => args[0])
+          @thumb = Paperclip::Thumbnail.new(@file, @style)
         end
 
         should "start with dimensions of 434x66" do
@@ -70,7 +71,8 @@ class ThumbnailTest < Test::Unit::TestCase
 
     context "being thumbnailed at 100x50 with cropping" do
       setup do
-        @thumb = Paperclip::Thumbnail.new(@file, :geometry => "100x50#")
+        @style = Paperclip::Definition::Style.new(:geometry => "100x50#")
+        @thumb = Paperclip::Thumbnail.new(@file, @style)
       end
 
       should "report its correct current and target geometries" do
@@ -105,9 +107,9 @@ class ThumbnailTest < Test::Unit::TestCase
     
     context "being thumbnailed with convert options set" do
       setup do
-        @thumb = Paperclip::Thumbnail.new(@file,
-                                          :geometry        => "100x50#",
-                                          :convert_options => "-strip -depth 8")
+        @style = Paperclip::Definition::Style.new(:geometry        => "100x50#",
+                                                  :convert_options => "-strip -depth 8")
+        @thumb = Paperclip::Thumbnail.new(@file, @style)
       end
 
       should "have convert_options value set" do
@@ -128,9 +130,9 @@ class ThumbnailTest < Test::Unit::TestCase
       
       context "redefined to have bad convert_options setting" do
         setup do
-          @thumb = Paperclip::Thumbnail.new(@file,
-                                            :geometry => "100x50#",
-                                            :convert_options => "-this-aint-no-option")
+          @style = Paperclip::Definition::Style.new( :geometry => "100x50#",
+                                                    :convert_options => "-this-aint-no-option")
+          @thumb = Paperclip::Thumbnail.new(@file, @style)
         end
 
         should "error when trying to create the thumbnail" do
@@ -156,7 +158,8 @@ class ThumbnailTest < Test::Unit::TestCase
 
     context "being thumbnailed at 100x100 with cropping" do
       setup do
-        @thumb = Paperclip::Thumbnail.new(@file, :geometry => "100x100#", :format => :png)
+        @style = Paperclip::Definition::Style.new(:geometry => "100x100#", :format => :png)
+        @thumb = Paperclip::Thumbnail.new(@file, @style)
       end
 
       should "report its correct current and target geometries" do
