@@ -4,23 +4,25 @@ module Paperclip
   #   user.avatar = File.new("test/test_avatar.jpg")
   module Upfile
 
+    attr_accessor :content_type, :original_filename
+
     # Infer the MIME-type of the file from the extension.
     def content_type
       type = (self.path.match(/\.(\w+)$/)[1] rescue "octet-stream").downcase
-      case type
-      when %r"jpe?g"                 then "image/jpeg"
-      when %r"tiff?"                 then "image/tiff"
-      when %r"png", "gif", "bmp"     then "image/#{type}"
-      when "txt"                     then "text/plain"
-      when %r"html?"                 then "text/html"
-      when "csv", "xml", "css", "js" then "text/#{type}"
-      else "application/x-#{type}"
-      end
+      @content_type ||= case type
+                        when %r"jpe?g"                 then "image/jpeg"
+                        when %r"tiff?"                 then "image/tiff"
+                        when %r"png", "gif", "bmp"     then "image/#{type}"
+                        when "txt"                     then "text/plain"
+                        when %r"html?"                 then "text/html"
+                        when "csv", "xml", "css", "js" then "text/#{type}"
+                        else "application/x-#{type}"
+                        end
     end
 
     # Returns the file's normal name.
     def original_filename
-      File.basename(self.path)
+      @original_filename ||= File.basename(self.path)
     end
 
     # Returns the size of the file.
