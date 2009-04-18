@@ -63,13 +63,22 @@ module Paperclip
       def exists? path
         File.exists?(path)
       end
+
+      def to_file path
+        return nil if path.nil?
+        File.new(path)
+      end
     end
 
     class S3 < Storage
-      class Container < AWS::S3::S3Object; end
-
       attr_accessor :credentials, :options, :bucket, :headers
+      def self.setup_s3
+        require 'aws/s3'
+        S3.const_set("Container", Class.new(AWS::S3::S3Object)) unless S3.const_defined?("Container")
+      end
+
       def initialize options
+        self.class.setup_s3
         @options     = options.options
         @credentials = options.credentials
         @bucket      = options.bucket
@@ -102,6 +111,16 @@ module Paperclip
         rescue AWS::S3::ResponseError => e
           raise Paperclip::StorageError.new(e)
         end
+      end
+
+      def to_file path
+        file = Tempfile.new(path)
+        Container.stream(path, bucket) do |chunk|
+          file.write(chunk)
+        end
+        file.rewind
+        file.original_filename = File.basename(path)
+        file
       end
     end
   end
