@@ -16,39 +16,30 @@ module Paperclip
       }
     end
 
-    attr_reader :name, :instance, :styles, :default_style, :convert_options, :queued_for_write
+    attr_reader :name, :instance, :styles, :default_style, :convert_options, :queued_for_write, :definition
 
     # Creates an Attachment object. +name+ is the name of the attachment,
     # +instance+ is the ActiveRecord object instance it's attached to, and
     # +options+ is the same as the hash passed to +has_attached_file+.
-    def initialize name, instance, options = {}
-      @name              = name
-      @instance          = instance
+    def initialize name, instance, definition
+      @name               = name
+      @instance           = instance
+      @definition         = definition
+      @definition.payload = self
 
-      options = self.class.default_options.merge(options)
+      @url                = definition.url
+      @path               = definition.path
+      @default_url        = definition.default_url
+      @validations        = definition.validations
+      @default_style      = definition.default_style
+      @storage            = definition.storage
+      @whiny              = definition.whiny_processing
 
-      @url               = options[:url]
-      @url               = @url.call(self) if @url.is_a?(Proc)
-      @path              = options[:path]
-      @path              = @path.call(self) if @path.is_a?(Proc)
-      @styles            = options[:styles]
-      @styles            = @styles.call(self) if @styles.is_a?(Proc)
-      @default_url       = options[:default_url]
-      @validations       = options[:validations]
-      @default_style     = options[:default_style]
-      @storage           = options[:storage]
-      @whiny             = options[:whiny_thumbnails]
-      @convert_options   = options[:convert_options] || {}
-      @processors        = options[:processors] || [:thumbnail]
-      @options           = options
-      @queued_for_delete = []
-      @queued_for_write  = {}
-      @errors            = {}
-      @validation_errors = nil
-      @dirty             = false
-
-      normalize_style_definition
-      initialize_storage
+      @queued_for_delete  = []
+      @queued_for_write   = {}
+      @errors             = {}
+      @validation_errors  = nil
+      @dirty              = false
     end
 
     # What gets called when you call instance.attachment = File. It clears
@@ -60,16 +51,7 @@ module Paperclip
     # If the file that is assigned is not valid, the processing (i.e.
     # thumbnailing, etc) will NOT be run.
     def assign uploaded_file
-      %w(file_name).each do |field|
-        unless @instance.class.column_names.include?("#{name}_#{field}")
-          raise PaperclipError.new("#{@instance.class} model does not have required column '#{name}_#{field}'")
-        end
-      end
-
-      if uploaded_file.is_a?(Paperclip::Attachment)
-        uploaded_file = uploaded_file.to_file(:original)
-        close_uploaded_file = uploaded_file.respond_to?(:close)
-      end
+      verify_columns!
 
       return nil unless valid_assignment?(uploaded_file)
 
@@ -91,7 +73,6 @@ module Paperclip
       # Reset the file size if the original file was reprocessed.
       instance_write(:file_size, @queued_for_write[:original].size.to_i)
     ensure
-      uploaded_file.close if close_uploaded_file
       validate
     end
 
@@ -150,7 +131,7 @@ module Paperclip
       end
     end
 
-    # Clears out the attachment. Has the same effect as previously assigning
+    # Clears out the attachment. Has the same effect as assigning
     # nil to the attachment. Does NOT save. If you wish to clear AND save,
     # use #destroy.
     def clear
@@ -159,7 +140,7 @@ module Paperclip
       @validation_errors = nil
     end
 
-    # Destroys the attachment. Has the same effect as previously assigning
+    # Destroys the attachment. Has the same effect as assigning
     # nil to the attachment *and saving*. This is permanent. If you wish to
     # wipe out the existing attachment but not save, use #clear.
     def destroy
@@ -208,7 +189,7 @@ module Paperclip
                            attachment.original_filename.gsub(/#{File.extname(attachment.original_filename)}$/, "")
                          end,
         :extension    => lambda do |attachment,style| 
-                           ((style = attachment.styles[style]) && style[:format]) ||
+                           ((style = attachment.definition.style(style)) && style[:format]) ||
                            File.extname(attachment.original_filename).gsub(/^\.+/, "")
                          end,
         :id           => lambda{|attachment,style| attachment.instance.id },
@@ -267,10 +248,22 @@ module Paperclip
       instance.send(getter) if responds || attr.to_s == "file_name"
     end
 
+    def to_file(style = default_style)
+      @storage.to_file(path(style))
+    end
+
     private
 
+    def verify_columns!
+      %w(file_name).each do |field|
+        unless @instance.class.column_names.include?("#{name}_#{field}")
+          raise PaperclipError.new("#{@instance.class} model does not have required column '#{name}_#{field}'")
+        end
+      end
+    end
+
     def logger #:nodoc:
-      instance.logger
+      @logger ||= instance.respond_to?(:logger) ? instance.logger : Logger.new(STDOUT)
     end
 
     def log message #:nodoc:
@@ -298,52 +291,8 @@ module Paperclip
       @validation_errors
     end
 
-    def normalize_style_definition #:nodoc:
-      @styles.each do |name, args|
-        unless args.is_a? Hash
-          dimensions, format = [args, nil].flatten[0..1]
-          format             = nil if format.blank?
-          @styles[name]      = {
-            :processors      => @processors,
-            :geometry        => dimensions,
-            :format          => format,
-            :whiny           => @whiny,
-            :convert_options => extra_options_for(name)
-          }
-        else
-          @styles[name] = {
-            :processors => @processors,
-            :whiny => @whiny,
-            :convert_options => extra_options_for(name)
-          }.merge(@styles[name])
-        end
-      end
-    end
-
-    def solidify_style_definitions #:nodoc:
-      @styles.each do |name, args|
-        @styles[name][:geometry] = @styles[name][:geometry].call(instance) if @styles[name][:geometry].respond_to?(:call)
-        @styles[name][:processors] = @styles[name][:processors].call(instance) if @styles[name][:processors].respond_to?(:call)
-      end
-    end
-
-    def initialize_storage #:nodoc:
-      @storage_module = Paperclip::Storage.const_get(@storage.to_s.capitalize)
-      self.extend(@storage_module)
-    end
-
-    def extra_options_for(style) #:nodoc:
-      all_options   = convert_options[:all]
-      all_options   = all_options.call(instance)   if all_options.respond_to?(:call)
-      style_options = convert_options[style]
-      style_options = style_options.call(instance) if style_options.respond_to?(:call)
-
-      [ style_options, all_options ].compact.join(" ")
-    end
-
     def post_process #:nodoc:
       return if @queued_for_write[:original].nil?
-      solidify_style_definitions
       return if fire_events(:before)
       post_process_styles
       return if fire_events(:after)
@@ -359,10 +308,10 @@ module Paperclip
     end
 
     def post_process_styles
-      @styles.each do |name, args|
+      definition.each_style do |name, args|
         begin
-          raise RuntimeError.new("Style #{name} has no processors defined.") if args[:processors].blank?
-          @queued_for_write[name] = args[:processors].inject(@queued_for_write[:original]) do |file, processor|
+          raise RuntimeError.new("Style #{name} has no processors defined.") if args.processors.blank?
+          @queued_for_write[name] = args.processors.inject(@queued_for_write[:original]) do |file, processor|
             Paperclip.processor(processor).make(file, args, self)
           end
         rescue PaperclipError => e
@@ -384,7 +333,7 @@ module Paperclip
 
     def queue_existing_for_delete #:nodoc:
       return unless file?
-      @queued_for_delete += [:original, *@styles.keys].uniq.map do |style|
+      @queued_for_delete += [:original, *definition.styles].uniq.map do |style|
         path(style) if exists?(style)
       end.compact
       instance_write(:file_name, nil)
@@ -397,6 +346,20 @@ module Paperclip
       @errors.each do |error, message|
         [message].flatten.each {|m| instance.errors.add(name, m) }
       end
+    end
+    
+    def flush_writes
+      @queued_for_write.each do |style, file|
+        @storage.write(path(style), file, self)
+      end
+      @queued_for_write = {}
+    end
+
+    def flush_deletes
+      @queued_for_delete.each do |path|
+        @storage.delete(path)
+      end
+      @queued_for_delete = []
     end
 
   end

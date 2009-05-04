@@ -1,10 +1,28 @@
 module Paperclip
   class Definition
-    attr_accessor :url, :path, :default_style, :default_url, :whiny_processing,
-                  :storage, :storage_method
+    def self.attr_latebind *fields
+      fields.each do |field|
+        attr_writer :field
+        define_method field do
+          value = instance_variable_get("@#{field}")
+          value.respond_to?(:call) ? value.call(payload) : value
+        end
+      end
+    end
+
+    attr_latebind :url, :path, :default_style, :default_url, :whiny_processing
+    attr_accessor :storage, :storage_method, :validations, :payload
 
     def self.default_options
-      @default_options ||= {}
+      @default_options ||= {
+        :url           => "/system/:attachment/:id/:style/:basename.:extension",
+        :path          => ":rails_root/public/system/:attachment/:id/:style/:basename.:extension",
+        :default_url   => "/:attachment/:style/missing.png",
+        :default_style => :original,
+        :validations   => {},
+        :processors    => [:thumbnail],
+        :storage       => :filesystem
+      }
     end
 
     def initialize options = {}
@@ -13,16 +31,40 @@ module Paperclip
       @path             = options[:path]             || defaults[:path]
       @default_style    = options[:default_style]    || defaults[:default_style]
       @default_url      = options[:default_url]      || defaults[:default_url]
+      @validations      = options[:validations]      || defaults[:validations]
       @whiny_processing = options[:whiny_processing] || defaults[:whiny_processing]
       @storage_method   = options[:storage]          || :filesystem
       @all_styles       = options[:all_styles]       || {}
-      @style_hashes     = options[:styles]
+      @style_hashes     = options[:styles]           || {}
       @styles           = {}
-      @storage          = Storage.for(@storage_method, options)
+
+      @options          = options
+
+      @all_styles[:processors] = options[:processors]
+      @all_styles       = Style.new(@all_styles)
+      @style_hashes.each do |name, opts|
+        @styles[name] = @all_styles.merge(Style.new(opts))
+      end
+
+      @styles.each do |name, style|
+        style.processors ||= @all_styles.processors || defaults[:processors]
+      end
+    end
+
+    def storage
+      Storage.for(@storage_method, @options)
     end
 
     def style name
-      @styles[name] ||= Style.new(@all_styles.merge(@style_hashes[name]))
+      @styles[name]
+    end
+
+    def styles
+      @styles.keys
+    end
+
+    def each_style &block
+      @styles.each(&block)
     end
 
     class Options
@@ -33,6 +75,8 @@ module Paperclip
         end
       end
 
+      attr_accessor :payload
+
       def option_methods
         @methods
       end
@@ -41,6 +85,10 @@ module Paperclip
         (@methods ||= []) << method.to_sym
         (class << self; self; end).class_eval do
           attr_accessor method
+          define_method method do
+            value = instance_variable_get("@#{method}")
+            value.respond_to?(:call) ? value.call(payload) : value
+          end
         end
         instance_variable_set("@#{method}", value)
       end
@@ -115,13 +163,17 @@ module Paperclip
 
     class Style < Options
       def initialize options = {}, format = nil
-        if options.is_a? String
+        case options
+        when String
           geometry = options
+          options = {}
+        when Array
+          geometry, format = options
           options = {}
         end
         self.geometry         = options.delete(:geomtry) || geometry
         self.format           = options.delete(:format) || format
-        self.processors       = options.delete(:processors) || [:thumbnail]
+        self.processors       = options.delete(:processors)
         self.convert_options  = options.delete(:convert_options)
         self.whiny_processing = options.delete(:whiny_processing)
         self.whiny_processing = whiny_processing.nil? ? true : whiny_processing

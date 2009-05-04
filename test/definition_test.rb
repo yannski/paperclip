@@ -2,7 +2,7 @@ require 'test/helper'
 
 class DefinitionTest < Test::Unit::TestCase
   context "A definition" do
-    [:url, :path, :default_url, :default_style, :whiny_processing].each do |field|
+    [:url, :path, :default_url, :default_style, :whiny_processing, :validations].each do |field|
       should "accept a #{field.inspect} a parameter and be able to return it" do
         d = Paperclip::Definition.new(field => "my_#{field}")
         assert_equal "my_#{field}", d.send(field)
@@ -25,6 +25,20 @@ class DefinitionTest < Test::Unit::TestCase
     should "return a Style object corresponding to the style key with the right values" do
       d = Paperclip::Definition.new(:styles => {:thumb => {:one => :two}})
       assert_equal :two, d.style(:thumb).one
+    end
+    should "put the processors specified in the main hash into the styles" do
+      d = Paperclip::Definition.new(:processors => [:thumbnail, :test],
+                                    :styles     => {:thumb => {:one => :two}})
+      assert_equal [:thumbnail, :test], d.style(:thumb).processors
+    end
+    should "override the processors specified in the main hash with the styles" do
+      d = Paperclip::Definition.new(:processors => [:thumbnail, :test],
+                                    :styles     => {:thumb => {:one => :two, :processors => [:one]}})
+      assert_equal [:one], d.style(:thumb).processors
+    end
+    should "return the default processors when nothing is specified" do
+      d = Paperclip::Definition.new( :styles => {:thumb => {:one => :two}})
+      assert_equal [:thumbnail], d.style(:thumb).processors
     end
     context "returning a Storage object on call to #storage" do
       setup{ @definition = Paperclip::Definition.new }
@@ -113,10 +127,12 @@ class DefinitionTest < Test::Unit::TestCase
       assert_equal "123", @options.non_method
     end
     should "create an accessor when blocks are passed to unknown methods" do
-      block = lambda{ puts "Hi!" }
+      block = lambda{|o| o.hello }
+      (payload = stub).expects(:hello).returns("Hi!")
       assert ! @options.respond_to?(:non_method)
+      @options.payload = payload
       @options.non_method &block
-      assert_equal block, @options.non_method
+      assert_equal "Hi!", @options.non_method
     end
     should "return nil when unknown getters are called" do
       assert ! @options.respond_to?(:non_method)
@@ -175,7 +191,26 @@ class DefinitionTest < Test::Unit::TestCase
   context "A style accepting an empty hash" do
     setup{ @style = Paperclip::Definition::Style.new({}) }
     should "set the default processors" do
-      assert_equal [:thumbnail], @style.processors
+      assert_equal nil, @style.processors
+    end
+    should "set the default convert_options" do
+      assert_equal nil, @style.convert_options
+    end
+    should "set the default whiny value" do
+      assert_equal true, @style.whiny_processing
+    end
+  end
+
+  context "A style accepting a geometry string and format as an array" do
+    setup{ @style = Paperclip::Definition::Style.new(["100x100", :png]) }
+    should "set the format to png" do
+      assert_equal :png, @style.format
+    end
+    should "set the geometry to the argument" do
+      assert_equal "100x100", @style.geometry
+    end
+    should "set the default processors" do
+      assert_equal nil, @style.processors
     end
     should "set the default convert_options" do
       assert_equal nil, @style.convert_options
@@ -194,7 +229,7 @@ class DefinitionTest < Test::Unit::TestCase
       assert_equal "100x100", @style.geometry
     end
     should "set the default processors" do
-      assert_equal [:thumbnail], @style.processors
+      assert_equal nil, @style.processors
     end
     should "set the default convert_options" do
       assert_equal nil, @style.convert_options
@@ -213,7 +248,7 @@ class DefinitionTest < Test::Unit::TestCase
       assert_equal "100x100", @style.geometry
     end
     should "set the default processors" do
-      assert_equal [:thumbnail], @style.processors
+      assert_equal nil, @style.processors
     end
     should "set the default convert_options" do
       assert_equal nil, @style.convert_options
@@ -232,7 +267,7 @@ class DefinitionTest < Test::Unit::TestCase
       assert_equal "100x100", @style.geometry
     end
     should "set the default processors" do
-      assert_equal [:thumbnail], @style.processors
+      assert_equal nil, @style.processors
     end
     should "set the default convert_options" do
       assert_equal nil, @style.convert_options

@@ -188,7 +188,7 @@ module Paperclip
       include InstanceMethods
 
       write_inheritable_attribute(:attachment_definitions, {}) if attachment_definitions.nil?
-      attachment_definitions[name] = {:validations => {}}.merge(options)
+      attachment_definitions[name] = Paperclip::Definition.new(options)
 
       after_save :save_attached_files
       before_destroy :destroy_attached_files
@@ -285,7 +285,7 @@ module Paperclip
   module InstanceMethods #:nodoc:
     def attachment_for name
       @_paperclip_attachments ||= {}
-      @_paperclip_attachments[name] ||= Attachment.new(name, self, self.class.attachment_definitions[name])
+      @_paperclip_attachments[name] ||= Attachment.new(name, self, self.class.attachment_definitions[name].clone)
     end
     
     def each_attachment

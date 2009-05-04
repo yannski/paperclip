@@ -4,7 +4,6 @@ gem 'thoughtbot-shoulda', ">= 2.9.0"
 require 'shoulda'
 require 'mocha'
 require 'tempfile'
-require 'aws/s3'
 
 gem 'sqlite3-ruby'
 
@@ -34,42 +33,38 @@ config = YAML::load(IO.read(File.dirname(__FILE__) + '/database.yml'))
 ActiveRecord::Base.logger = Logger.new(File.dirname(__FILE__) + "/debug.log")
 ActiveRecord::Base.establish_connection(config['test'])
 
-def reset_class class_name
+def force_table table_name, &block
+  block ||= lambda{ true }
+  ActiveRecord::Base.connection.create_table table_name, {:force => true}, &block
+end
+
+def rebuild_table table_name, attachment_name
+  force_table table_name do |table|
+    table.column :other, :string
+    table.column :"#{attachment_name}_file_name", :string
+    table.column :"#{attachment_name}_content_type", :string
+    table.column :"#{attachment_name}_file_size", :integer
+    table.column :"#{attachment_name}_updated_at", :datetime
+  end
+end
+
+def rebuild_class class_name
   ActiveRecord::Base.send(:include, Paperclip)
   Object.send(:remove_const, class_name) rescue nil
-  klass = Object.const_set(class_name, Class.new(ActiveRecord::Base))
-  klass.class_eval{ include Paperclip }
-  klass
-end
-
-def reset_table table_name, &block
-  block ||= lambda{ true }
-  ActiveRecord::Base.connection.create_table :dummies, {:force => true}, &block
-end
-
-def modify_table table_name, &block
-  ActiveRecord::Base.connection.change_table :dummies, &block
+  Object.const_set(class_name, Class.new(ActiveRecord::Base))
+  Object.const_get(class_name).class_eval do
+    include Paperclip
+  end
 end
 
 def rebuild_model options = {}
-  ActiveRecord::Base.connection.create_table :dummies, :force => true do |table|
-    table.column :other, :string
-    table.column :avatar_file_name, :string
-    table.column :avatar_content_type, :string
-    table.column :avatar_file_size, :integer
-    table.column :avatar_updated_at, :datetime
-  end
-  rebuild_class options
+  rebuild_table :models, :avatar unless table_exists?(:models)
+  rebuild_class "Model"
+  Model.has_attached_file :avatar, options
 end
 
-def rebuild_class options = {}
-  ActiveRecord::Base.send(:include, Paperclip)
-  Object.send(:remove_const, "Dummy") rescue nil
-  Object.const_set("Dummy", Class.new(ActiveRecord::Base))
-  Dummy.class_eval do
-    include Paperclip
-    has_attached_file :avatar, options
-  end
+def table_exists? name
+  @exists ||= ActiveRecord::Base.connection.table_exists?(name)
 end
 
 def temporary_rails_env(new_env)
@@ -81,4 +76,27 @@ def temporary_rails_env(new_env)
   silence_warnings do
     Object.const_set("RAILS_ENV", old_env)
   end
+end
+
+def fixture_file filename, &blk
+  File.open(File.join(File.dirname(__FILE__), "fixtures", filename), "rb", &blk)
+end
+
+def mock_instance attachment
+  instance = mock
+  klass = mock
+  klass.stubs(:column_names).returns(["#{attachment}_file_name"])
+  instance.stubs(:class).returns(klass)
+  instance.stubs(:errors).returns([])
+  instance.stubs(:run_callbacks)
+  (class << instance; self; end).class_eval do
+    attr_accessor :"#{attachment}_file_name"
+  end
+  instance
+end
+
+def mock_attachment attachment, options
+  model = mock_instance :avatar
+  definition = Paperclip::Definition.new options
+  attachment = Paperclip::Attachment.new attachment, model, definition
 end
