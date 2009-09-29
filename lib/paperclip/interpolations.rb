@@ -46,11 +46,6 @@ module Paperclip
       attachment.url(style, false)
     end
 
-    # Returns the timestamp as defined by the <attachment>_updated_at field
-    def timestamp attachment, style
-      attachment.instance_read(:updated_at).to_s
-    end
-
     # Returns the RAILS_ROOT constant.
     def rails_root attachment, style
       RAILS_ROOT
@@ -67,31 +62,30 @@ module Paperclip
     # all class names. Calling #class will return the expected class.
     def class attachment = nil, style = nil
       return super() if attachment.nil? && style.nil?
-      attachment.instance.class.to_s.underscore.pluralize
+      attachment.model.class.to_s.underscore.pluralize
     end
 
     # Returns the basename of the file. e.g. "file" for "file.jpg"
     def basename attachment, style
-      attachment.original_filename.gsub(/#{File.extname(attachment.original_filename)}$/, "")
+      attachment.file_name.gsub(/#{File.extname(attachment.file_name)}$/, "")
     end
 
     # Returns the extension of the file. e.g. "jpg" for "file.jpg"
     # If the style has a format defined, it will return the format instead
     # of the actual extension.
     def extension attachment, style 
-      ((style = attachment.styles[style]) && style[:format]) ||
-        File.extname(attachment.original_filename).gsub(/^\.+/, "")
+      File.extname(attachment.file_name).gsub(/^\.+/, "")
     end
 
-    # Returns the id of the instance.
+    # Returns the id of the model.
     def id attachment, style
-      attachment.instance.id
+      attachment.model.id
     end
 
-    # Returns the id of the instance in a split path form. e.g. returns
+    # Returns the id of the model in a split path form. e.g. returns
     # 000/001/234 for an id of 1234.
     def id_partition attachment, style
-      ("%09d" % attachment.instance.id).scan(/\d{3}/).join("/")
+      ("%09d" % attachment.model.id).scan(/\d{3}/).join("/")
     end
 
     # Returns the pluralized form of the attachment name. e.g.

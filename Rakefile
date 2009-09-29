@@ -76,7 +76,8 @@ spec = Gem::Specification.new do |s|
   s.rdoc_options << '--line-numbers' << '--inline-source'
   s.requirements << "ImageMagick"
   s.add_development_dependency 'thoughtbot-shoulda'
-  s.add_development_dependency 'mocha'
+  s.add_development_dependency 'jferris-mocha'
+  s.add_development_dependency 'defunkt-fakefs'
 end
 
 desc "Print a list of the files to be put into the gem"
