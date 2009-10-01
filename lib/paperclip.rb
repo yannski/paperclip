@@ -1,10 +1,18 @@
 require "paperclip/interpolations"
+require "paperclip/uploaded_file"
+require "paperclip/processor"
+require "paperclip/attachment"
 
 module Paperclip
   VERSION = "3.0.0"
 
   class PaperclipError < StandardError; end
   class InfiniteInterpolationError < PaperclipError; end
+
+  def self.included(base)
+    File.send(:include, UploadedFile)
+    StringIO.send(:include, UploadedFile)
+  end
 
   def has_attached_file(name, options = {})
     include InstanceMethods
@@ -25,13 +33,15 @@ module Paperclip
       attachment_for(name).assign(file)
     end
 
-    after_save :flush_attachments
+    after_save     :flush_attachments
+    before_destroy :flush_attachments
   end
 
   module InstanceMethods
     def flush_attachments
       self.class.paperclip_definitions.keys.each do |name|
-        attachment_for(name).flush_on_save
+        attachment_for(name).flush_deletes
+        attachment_for(name).flush_writes
       end
     end
 
@@ -41,59 +51,6 @@ module Paperclip
 
     def attachment_options(name)
       self.class.paperclip_definitions[name]
-    end
-  end
-
-  class Processor
-  end
-
-  class Attachment
-    attr_accessor :name, :options, :model
-
-    def initialize(name, model, options = {})
-      @name = name
-      @model = model
-      @options = options
-    end
-
-    def assign(file)
-      write_model_attribute(:file_name,    File.basename(file.path))
-      write_model_attribute(:content_type, MIME::Types.of(file.path).to_s)
-      write_model_attribute(:file_size,    File.size(file.path))
-      @queue_for_save = [file]
-    end
-
-    def file_name
-      read_model_attribute(:file_name)
-    end
-
-    def content_type
-      read_model_attribute(:content_type)
-    end
-
-    def file_size
-      read_model_attribute(:file_size)
-    end
-
-    def read_model_attribute(attribute)
-      @model.send(:"#{name}_#{attribute}")
-    end
-
-    def write_model_attribute(attribute, data)
-      @model.send(:"#{name}_#{attribute}=", data)
-    end
-
-    def path
-      Paperclip::Interpolations.interpolate(options[:path], self, :original)
-    end
-
-    def flush_on_save
-      @queue_for_save.each do |file|
-        FileUtils.mkdir_p(File.dirname(path))
-        File.open(path, "w" ) do |f|
-          f.write(file.read)
-        end
-      end
     end
   end
 end

@@ -49,12 +49,75 @@ class AttachmentTest < Test::Unit::TestCase
     end
   end
 
+  context "With a standard model Dummy, attachment :avatar, and no options, assigning a StringIO" do
+    setup do
+      define_attachment! "Dummy", :avatar
+      @dummy = Dummy.new
+      @stringio = StringIO.new("This is a file")
+      @dummy.avatar = @stringio
+    end
+
+    should "assign the file's name to avatar_file_name" do
+      assert_equal "default.txt", @dummy.avatar_file_name
+    end
+
+    should "assign the file's content type to avatar_content_type" do
+      assert_equal "text/plain", @dummy.avatar_content_type
+    end
+
+    should "assign the file's size to avatar_file_size" do
+      assert_equal @stringio.length, @dummy.avatar_file_size
+    end
+
+    should "not store the file on the filesystem yet" do
+      assert ! File.exist?(@dummy.avatar.path)
+    end
+
+    should "store the file on the filesystem after the model has been saved" do
+      @dummy.save
+      assert File.exist?(@dummy.avatar.path), @dummy.avatar.path
+    end
+  end
+
   should "put the file in the right place when given a :path" do
     define_attachment! "Dummy", :avatar, :path => "tmp/:class/:attachment/:id_partition/:filename"
     @dummy = Dummy.new
     @dummy.avatar = fixture_file("image.jpg")
     @dummy.save
     assert_match %r{tmp/dummies/avatars/000/000/001/image.jpg}, @dummy.avatar.path
+  end
+
+  should "return a properly interpolated url from #url when given a :url option" do
+    define_attachment! "Dummy", :avatar, :url => ":class/:attachment/:filename"
+    @dummy = Dummy.new
+    @dummy.avatar = fixture_file("image.jpg")
+    assert_match %r{dummies/avatars/image.jpg}, @dummy.avatar.url
+  end
+
+  context "with a saved attachment on a model" do
+    setup do
+      define_attachment! "Dummy", :avatar, :path => "tmp/:class/:attachment/:id_partition/:filename"
+      @dummy = Dummy.new
+      @dummy.avatar = fixture_file("image.jpg")
+      @dummy.save
+      @expected_path = @dummy.avatar.path
+    end
+
+    should "not delete the attachment when assigned nil" do
+      @dummy.avatar = nil
+      assert File.exists?(@expected_path)
+    end
+
+    should "delete the file attachment when assigned nil and saved" do
+      @dummy.avatar = nil
+      @dummy.save
+      assert ! File.exists?(@expected_path)
+    end
+
+    should "delete the file attachment when the model is destroyed" do
+      @dummy.destroy
+      assert ! File.exists?(@expected_path)
+    end
   end
 
     # should "retain all the right attributes after saving and reloading the model" do
