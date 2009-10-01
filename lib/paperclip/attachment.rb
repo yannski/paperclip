@@ -12,11 +12,7 @@ module Paperclip
       @queue_for_save   = []
       @queue_for_delete = []
 
-      @queue_for_delete = [path] if present?
-      write_model_attribute(:file_name,    nil)
-      write_model_attribute(:content_type, nil)
-      write_model_attribute(:file_size,    nil)
-
+      self.clear
       return if file.nil?
 
       write_model_attribute(:file_name,    File.basename(file.original_filename))
@@ -57,6 +53,13 @@ module Paperclip
       Paperclip::Interpolations.interpolate(options[:url], self, :original)
     end
 
+    def clear
+      @queue_for_delete = [path] if present?
+      write_model_attribute(:file_name,    nil)
+      write_model_attribute(:content_type, nil)
+      write_model_attribute(:file_size,    nil)
+    end
+
     def flush_writes
       @queue_for_save.each do |file|
         FileUtils.mkdir_p(File.dirname(path))
@@ -64,12 +67,14 @@ module Paperclip
           f.write(file.read)
         end
       end
+      @queue_for_save = []
     end
 
     def flush_deletes
       @queue_for_delete.each do |file|
-        File.unlink(file)
+        File.delete(file)
       end
+      @queue_for_delete = []
     end
   end
 end

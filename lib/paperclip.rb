@@ -34,10 +34,17 @@ module Paperclip
     end
 
     after_save     :flush_attachments
+    before_destroy :destroy_attachment
     before_destroy :flush_attachments
   end
 
   module InstanceMethods
+    def destroy_attachment
+      self.class.paperclip_definitions.keys.each do |name|
+        attachment_for(name).clear
+      end
+    end
+
     def flush_attachments
       self.class.paperclip_definitions.keys.each do |name|
         attachment_for(name).flush_deletes
