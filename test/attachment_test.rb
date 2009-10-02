@@ -100,23 +100,31 @@ class AttachmentTest < Test::Unit::TestCase
       @dummy = Dummy.new
       @dummy.avatar = fixture_file("image.jpg")
       @dummy.save
-      @expected_path = @dummy.avatar.path
+      @current_path = @dummy.avatar.path
     end
 
     should "not delete the attachment when assigned nil" do
       @dummy.avatar = nil
-      assert File.exists?(@expected_path)
+      assert File.exists?(@current_path)
     end
 
     should "delete the file attachment when assigned nil and saved" do
       @dummy.avatar = nil
       @dummy.save
-      assert ! File.exists?(@expected_path)
+      assert ! File.exists?(@current_path)
     end
 
     should "delete the file attachment when the model is destroyed" do
       @dummy.destroy
-      assert ! File.exists?(@expected_path)
+      assert ! File.exists?(@current_path)
+    end
+
+    should "move the file if the destination path changes" do
+      @dummy.id = @dummy.id + 1000
+      @expected_path = @dummy.avatar.path
+      @dummy.save
+      assert ! File.exists?(@current_path)
+      assert   File.exists?(@expected_path)
     end
   end
 

@@ -6,6 +6,7 @@ module Paperclip
       @name = name
       @model = model
       @options = options
+      set_existing_path
     end
 
     def assign(file)
@@ -60,21 +61,48 @@ module Paperclip
       write_model_attribute(:file_size,    nil)
     end
 
+    def set_existing_path
+      @existing_path = present? ? path : nil
+    end
+
+    def save
+      flush_renames
+      flush_writes
+      flush_deletes
+      set_existing_path
+    end
+
     def flush_writes
       @queue_for_save.each do |file|
-        FileUtils.mkdir_p(File.dirname(path))
-        File.open(path, "w" ) do |f|
-          f.write(file.read)
-        end
+        write(path, file)
       end
       @queue_for_save = []
     end
 
     def flush_deletes
-      @queue_for_delete.each do |file|
-        File.delete(file)
+      @queue_for_delete.each do |path|
+        delete(path)
       end
       @queue_for_delete = []
+    end
+
+    def flush_renames
+      if present? && ! @existing_path.nil? && (@existing_path != path)
+        file = File.new(@existing_path)
+        write(path, file)
+        delete(@existing_path)
+      end
+    end
+
+    def write(path, file)
+      FileUtils.mkdir_p(File.dirname(path))
+      File.open(path, "w" ) do |f|
+        f.write(file.read)
+      end
+    end
+
+    def delete(path)
+      File.delete(path)
     end
   end
 end

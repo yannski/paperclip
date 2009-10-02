@@ -47,8 +47,7 @@ module Paperclip
 
     def flush_attachments
       self.class.paperclip_definitions.keys.each do |name|
-        attachment_for(name).flush_deletes
-        attachment_for(name).flush_writes
+        attachment_for(name).save
       end
     end
 
