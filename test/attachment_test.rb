@@ -94,6 +94,21 @@ class AttachmentTest < Test::Unit::TestCase
     assert_match %r{dummies/avatars/image.jpg}, @dummy.avatar.url
   end
 
+  should "return a properly interpolated url from #url when there is no attachment" do
+    define_attachment! "Dummy", :avatar, :default_url => ":class/:attachment/not_found"
+    @dummy = Dummy.new
+    assert_match %r{dummies/avatars/not_found}, @dummy.avatar.url
+  end
+
+  should "use the default url when there is no attachment and the real url when there is" do
+    define_attachment! "Dummy", :avatar, :default_url => ":class/:attachment/not_found",
+                                         :url         => ":class/:attachment/:filename"
+    @dummy = Dummy.new
+    assert_match %r{dummies/avatars/not_found}, @dummy.avatar.url
+    @dummy.avatar = fixture_file("image.jpg")
+    assert_match %r{dummies/avatars/image.jpg}, @dummy.avatar.url
+  end
+
   context "with a saved attachment on a model" do
     setup do
       define_attachment! "Dummy", :avatar, :path => "tmp/:class/:attachment/:id_partition/:filename"

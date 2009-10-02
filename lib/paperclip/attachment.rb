@@ -6,7 +6,7 @@ module Paperclip
       @name = name
       @model = model
       @options = options
-      set_existing_path
+      set_existing_paths
     end
 
     def assign(file)
@@ -51,7 +51,11 @@ module Paperclip
     end
 
     def url
-      Paperclip::Interpolations.interpolate(options[:url], self, :original)
+      if present?
+        Paperclip::Interpolations.interpolate(options[:url], self, :original)
+      else
+        Paperclip::Interpolations.interpolate(options[:default_url], self, :original)
+      end
     end
 
     def clear
@@ -61,7 +65,7 @@ module Paperclip
       write_model_attribute(:file_size,    nil)
     end
 
-    def set_existing_path
+    def set_existing_paths
       @existing_path = present? ? path : nil
     end
 
@@ -69,7 +73,7 @@ module Paperclip
       flush_renames
       flush_writes
       flush_deletes
-      set_existing_path
+      set_existing_paths
     end
 
     def flush_writes
