@@ -2,7 +2,7 @@ module Paperclip
   class Attachment
     attr_accessor :name, :options, :model
 
-    def initialize(name, model, options = {})
+    def initialize(name, model, options = Options.new)
       @name = name
       @model = model
       @options = options

@@ -1,3 +1,4 @@
+require "paperclip/options"
 require "paperclip/interpolations"
 require "paperclip/uploaded_file"
 require "paperclip/processor"
@@ -8,6 +9,7 @@ module Paperclip
 
   class PaperclipError < StandardError; end
   class InfiniteInterpolationError < PaperclipError; end
+  class InvalidOptionError < PaperclipError; end
 
   def self.included(base)
     File.send(:include, UploadedFile)
@@ -18,12 +20,8 @@ module Paperclip
     include InstanceMethods
     cattr_accessor :paperclip_definitions
 
-    defaults = {
-      :path => "public/:class/:attachment/:id_partition/:style/:filename"
-    }
-
     self.paperclip_definitions ||= {}
-    self.paperclip_definitions[name] = defaults.merge(options)
+    self.paperclip_definitions[name] = Options.new(options)
 
     define_method(name) do
       attachment_for(name)
