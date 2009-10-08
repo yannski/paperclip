@@ -2,7 +2,7 @@ module Paperclip
   class Options
     def self.default
       @defaults ||= {
-        :path        => "public/:url",
+        :path        => ":rails_root/public/:url",
         :url         => "system/:class/:attachment/:id_partition/:style/:filename",
         :default_url => "system/:class/:attachment/default/:style.jpg",
         :styles      => {}

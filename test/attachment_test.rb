@@ -6,7 +6,7 @@ class AttachmentTest < Test::Unit::TestCase
     Time.stubs(:now).returns(@now)
   end
 
-  context "With a standard model Dummy, attachment :avatar, and no options" do
+  context "No options on a basic attachment on the Dummy class" do
     setup do
       define_attachment! "Dummy", :avatar
     end
@@ -20,7 +20,7 @@ class AttachmentTest < Test::Unit::TestCase
     end
   end
 
-  context "With a standard model Dummy, attachment :avatar, and no options, assigning a file" do
+  context "Assigning a File to a standard attachment" do
     setup do
       define_attachment! "Dummy", :avatar
       @dummy = Dummy.new
@@ -49,7 +49,7 @@ class AttachmentTest < Test::Unit::TestCase
     end
   end
 
-  context "With a standard model Dummy, attachment :avatar, and no options, assigning a StringIO" do
+  context "Assigning a StringIO to a standard attachment" do
     setup do
       define_attachment! "Dummy", :avatar
       @dummy = Dummy.new
@@ -79,37 +79,7 @@ class AttachmentTest < Test::Unit::TestCase
     end
   end
 
-  should "put the file in the right place when given a :path" do
-    define_attachment! "Dummy", :avatar, :path => "tmp/:class/:attachment/:id_partition/:filename"
-    @dummy = Dummy.new
-    @dummy.avatar = fixture_file("image.jpg")
-    @dummy.save
-    assert_match %r{tmp/dummies/avatars/000/000/001/image.jpg}, @dummy.avatar.path
-  end
-
-  should "return a properly interpolated url from #url when given a :url option" do
-    define_attachment! "Dummy", :avatar, :url => ":class/:attachment/:filename"
-    @dummy = Dummy.new
-    @dummy.avatar = fixture_file("image.jpg")
-    assert_match %r{dummies/avatars/image.jpg}, @dummy.avatar.url
-  end
-
-  should "return a properly interpolated url from #url when there is no attachment" do
-    define_attachment! "Dummy", :avatar, :default_url => ":class/:attachment/not_found"
-    @dummy = Dummy.new
-    assert_match %r{dummies/avatars/not_found}, @dummy.avatar.url
-  end
-
-  should "use the default url when there is no attachment and the real url when there is" do
-    define_attachment! "Dummy", :avatar, :default_url => ":class/:attachment/not_found",
-                                         :url         => ":class/:attachment/:filename"
-    @dummy = Dummy.new
-    assert_match %r{dummies/avatars/not_found}, @dummy.avatar.url
-    @dummy.avatar = fixture_file("image.jpg")
-    assert_match %r{dummies/avatars/image.jpg}, @dummy.avatar.url
-  end
-
-  context "with a saved attachment on a model" do
+  context "An attachment on a saved model" do
     setup do
       define_attachment! "Dummy", :avatar, :path => "tmp/:class/:attachment/:id_partition/:filename"
       @dummy = Dummy.new
@@ -143,15 +113,17 @@ class AttachmentTest < Test::Unit::TestCase
     end
   end
 
-  context "With a standard model, attachment, and a small thumbnail" do
+  context "An attachment with a small thumbnail" do
     setup do
-      define_attachment! "Dummy", :avatar, :styles => {:small => {:processors => [:null]}}
+      define_attachment! "Dummy", :avatar, :path => "tmp/:class/:attachment/:id_partition/:style/:filename",
+                                           :styles => {:small => {:processors => [:null]}}
       @dummy = Dummy.new
       @dummy.avatar = fixture_file("image.jpg")
     end
 
     should "put the files in locations appropriate to the style after save" do
       @dummy.save
+
       assert File.exists?(@dummy.avatar.path(:original))
       assert File.exists?(@dummy.avatar.path(:small))
     end
@@ -160,7 +132,9 @@ class AttachmentTest < Test::Unit::TestCase
       @dummy.save
       expected_path_original = @dummy.avatar.path(:original)
       expected_path_small    = @dummy.avatar.path(:small)
+      
       @dummy.destroy
+
       assert ! File.exists?(expected_path_original)
       assert ! File.exists?(expected_path_small)
     end
@@ -169,10 +143,28 @@ class AttachmentTest < Test::Unit::TestCase
       @dummy.save
       expected_path_original = @dummy.avatar.path(:original)
       expected_path_small    = @dummy.avatar.path(:small)
+
       @dummy.avatar = nil
       @dummy.save
+
       assert ! File.exists?(expected_path_original)
       assert ! File.exists?(expected_path_small)
+    end
+
+    should "move all files if the destination path changes" do
+      @dummy.save
+      current_path_original = @dummy.avatar.path(:original)
+      current_path_small    = @dummy.avatar.path(:small)
+      @dummy.id = @dummy.id + 1000
+      expected_path_original = @dummy.avatar.path(:original)
+      expected_path_small    = @dummy.avatar.path(:small)
+
+      @dummy.save
+      
+      assert ! File.exists?(current_path_original)
+      assert ! File.exists?(current_path_small)
+      assert   File.exists?(expected_path_original)
+      assert   File.exists?(expected_path_small)
     end
 
     should "have the small style be different from the original style" do
@@ -188,5 +180,35 @@ class AttachmentTest < Test::Unit::TestCase
       assert_no_match %r{\bsmall\b}, @dummy.avatar.path(:original)
       assert_no_match %r{\boriginal\b}, @dummy.avatar.path(:small)
     end
+  end
+
+  should "put the file in the right place when given a :path" do
+    define_attachment! "Dummy", :avatar, :path => "tmp/:class/:attachment/:id_partition/:filename"
+    @dummy = Dummy.new
+    @dummy.avatar = fixture_file("image.jpg")
+    @dummy.save
+    assert_match %r{tmp/dummies/avatars/000/000/001/image.jpg}, @dummy.avatar.path
+  end
+
+  should "return a properly interpolated url from #url when given a :url option" do
+    define_attachment! "Dummy", :avatar, :url => ":class/:attachment/:filename"
+    @dummy = Dummy.new
+    @dummy.avatar = fixture_file("image.jpg")
+    assert_match %r{dummies/avatars/image.jpg}, @dummy.avatar.url
+  end
+
+  should "return a properly interpolated url from #url when there is no attachment" do
+    define_attachment! "Dummy", :avatar, :default_url => ":class/:attachment/not_found"
+    @dummy = Dummy.new
+    assert_match %r{dummies/avatars/not_found}, @dummy.avatar.url
+  end
+
+  should "use the default url when there is no attachment and the real url when there is" do
+    define_attachment! "Dummy", :avatar, :default_url => ":class/:attachment/not_found",
+                                         :url         => ":class/:attachment/:filename"
+    @dummy = Dummy.new
+    assert_match %r{dummies/avatars/not_found}, @dummy.avatar.url
+    @dummy.avatar = fixture_file("image.jpg")
+    assert_match %r{dummies/avatars/image.jpg}, @dummy.avatar.url
   end
 end

@@ -72,7 +72,12 @@ module Paperclip
     end
 
     def set_existing_paths
-      @existing_path = present? ? path : nil
+      @existing_paths = {}
+      return unless present?
+      @existing_paths = options.styles.keys.inject({}) do |hash, key|
+        hash[key] = path(key)
+        hash
+      end
     end
 
     def save
@@ -97,10 +102,9 @@ module Paperclip
     end
 
     def flush_renames
-      if present? && ! @existing_path.nil? && (@existing_path != path)
-        file = File.new(@existing_path)
-        write(path, file)
-        delete(@existing_path)
+      return unless present?
+      @existing_paths.each do |style, existing_path|
+        rename(existing_path, path(style))
       end
     end
 
@@ -114,6 +118,13 @@ module Paperclip
 
     def delete(path)
       File.delete(path)
+    end
+
+    def rename(src, dst)
+      if src != dst
+        write(dst, File.new(src))
+        delete(src)
+      end
     end
   end
 end
