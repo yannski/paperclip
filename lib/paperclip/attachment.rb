@@ -19,7 +19,10 @@ module Paperclip
       write_model_attribute(:file_name,    File.basename(file.original_filename))
       write_model_attribute(:content_type, file.content_type)
       write_model_attribute(:file_size,    file.size)
-      @queue_for_save = [file]
+      @queue_for_save = {}
+      options.styles.keys.each do |style|
+        @queue_for_save[style] = file
+      end
     end
 
     def present?
@@ -46,15 +49,15 @@ module Paperclip
       @model.send(:"#{name}_#{attribute}=", data)
     end
 
-    def path
-      Paperclip::Interpolations.interpolate(options[:path], self, :original)
+    def path(style = :original)
+      Paperclip::Interpolations.interpolate(options[:path], self, style)
     end
 
-    def url
+    def url(style = :original)
       if present?
-        Paperclip::Interpolations.interpolate(options[:url], self, :original)
+        Paperclip::Interpolations.interpolate(options[:url], self, style)
       else
-        Paperclip::Interpolations.interpolate(options[:default_url], self, :original)
+        Paperclip::Interpolations.interpolate(options[:default_url], self, style)
       end
     end
 
@@ -77,8 +80,8 @@ module Paperclip
     end
 
     def flush_writes
-      @queue_for_save.each do |file|
-        write(path, file)
+      @queue_for_save.each do |style, file|
+        write(path(style), file)
       end
       @queue_for_save = []
     end
@@ -101,6 +104,7 @@ module Paperclip
     def write(path, file)
       FileUtils.mkdir_p(File.dirname(path))
       File.open(path, "w" ) do |f|
+        file.rewind
         f.write(file.read)
       end
     end

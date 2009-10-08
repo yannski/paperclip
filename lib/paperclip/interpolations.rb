@@ -43,7 +43,7 @@ module Paperclip
     # is used in the default :path to ease default specifications.
     def url attachment, style
       raise InfiniteInterpolationError if attachment.options[:url].include?(":url")
-      attachment.url#(style, false)
+      attachment.url(style)
     end
 
     # Returns the RAILS_ROOT constant.

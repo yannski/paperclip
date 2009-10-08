@@ -4,7 +4,8 @@ module Paperclip
       @defaults ||= {
         :path        => "public/:url",
         :url         => "system/:class/:attachment/:id_partition/:style/:filename",
-        :default_url => "system/:class/:attachment/default/:style.jpg"
+        :default_url => "system/:class/:attachment/default/:style.jpg",
+        :styles      => {}
       }
     end
 
@@ -16,7 +17,12 @@ module Paperclip
     end
 
     def [](key)
-      @options[key]
+      self.send(key)
+    end
+
+    def styles
+      @options[:styles][:original] ||= {}
+      @options[:styles]
     end
 
     def url
