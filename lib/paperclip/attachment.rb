@@ -10,7 +10,7 @@ module Paperclip
     end
 
     def assign(file)
-      @queue_for_save   = []
+      @queue_for_save   = {}
       @queue_for_delete = []
 
       self.clear
@@ -19,6 +19,7 @@ module Paperclip
       write_model_attribute(:file_name,    File.basename(file.original_filename))
       write_model_attribute(:content_type, file.content_type)
       write_model_attribute(:file_size,    file.size)
+
       @queue_for_save = {}
       options.styles.keys.each do |style|
         @queue_for_save[style] = file
@@ -62,7 +63,9 @@ module Paperclip
     end
 
     def clear
-      @queue_for_delete = [path] if present?
+      if present?
+        @queue_for_delete = options.styles.keys.map{|key| path(key) }
+      end
       write_model_attribute(:file_name,    nil)
       write_model_attribute(:content_type, nil)
       write_model_attribute(:file_size,    nil)

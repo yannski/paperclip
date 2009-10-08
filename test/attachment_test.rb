@@ -150,9 +150,29 @@ class AttachmentTest < Test::Unit::TestCase
       @dummy.avatar = fixture_file("image.jpg")
     end
 
-    should "put a file in a location appropriate to the style after save" do
+    should "put the files in locations appropriate to the style after save" do
       @dummy.save
+      assert File.exists?(@dummy.avatar.path(:original))
       assert File.exists?(@dummy.avatar.path(:small))
+    end
+
+    should "delete all associated files when the model is destroyed" do
+      @dummy.save
+      expected_path_original = @dummy.avatar.path(:original)
+      expected_path_small    = @dummy.avatar.path(:small)
+      @dummy.destroy
+      assert ! File.exists?(expected_path_original)
+      assert ! File.exists?(expected_path_small)
+    end
+
+    should "delete all associated files when the attachment is set to nil and saved" do
+      @dummy.save
+      expected_path_original = @dummy.avatar.path(:original)
+      expected_path_small    = @dummy.avatar.path(:small)
+      @dummy.avatar = nil
+      @dummy.save
+      assert ! File.exists?(expected_path_original)
+      assert ! File.exists?(expected_path_small)
     end
 
     should "have the small style be different from the original style" do
@@ -161,6 +181,12 @@ class AttachmentTest < Test::Unit::TestCase
 
     should "contain the style's name in the path" do
       assert_match %r{\bsmall\b}, @dummy.avatar.path(:small)
+      assert_match %r{\boriginal\b}, @dummy.avatar.path(:original)
+    end
+
+    should "not contain the other styles' names in the path" do
+      assert_no_match %r{\bsmall\b}, @dummy.avatar.path(:original)
+      assert_no_match %r{\boriginal\b}, @dummy.avatar.path(:small)
     end
   end
 end
