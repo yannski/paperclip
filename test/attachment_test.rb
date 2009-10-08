@@ -211,4 +211,11 @@ class AttachmentTest < Test::Unit::TestCase
     @dummy.avatar = fixture_file("image.jpg")
     assert_match %r{dummies/avatars/image.jpg}, @dummy.avatar.url
   end
+
+  should "override the default style when specified" do
+    define_attachment! "Dummy", :avatar, :default_style => :square,
+                                         :path => "tmp/:style/file.jpg"
+    @dummy = Dummy.new
+    assert_equal "tmp/square/file.jpg", @dummy.avatar.path
+  end
 end

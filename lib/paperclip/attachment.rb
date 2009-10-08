@@ -42,6 +42,10 @@ module Paperclip
       read_model_attribute(:file_size)
     end
 
+    def default_style
+      options[:default_style]
+    end
+
     def read_model_attribute(attribute)
       @model.send(:"#{name}_#{attribute}")
     end
@@ -50,11 +54,11 @@ module Paperclip
       @model.send(:"#{name}_#{attribute}=", data)
     end
 
-    def path(style = :original)
+    def path(style = default_style)
       Paperclip::Interpolations.interpolate(options[:path], self, style)
     end
 
-    def url(style = :original)
+    def url(style = default_style)
       if present?
         Paperclip::Interpolations.interpolate(options[:url], self, style)
       else
