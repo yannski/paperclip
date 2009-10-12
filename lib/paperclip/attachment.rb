@@ -6,7 +6,7 @@ module Paperclip
       @name = name
       @model = model
       @options = options
-      @storage = Storage.for(@options.storage_backend)
+      @storage = Storage.for(@options[:storage][:backend])
       @storage.attachment = self
       set_existing_paths
     end

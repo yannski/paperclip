@@ -7,7 +7,7 @@ module Paperclip
         :default_url     => "system/:class/:attachment/default/:style.jpg",
         :default_style   => :original,
         :styles          => {},
-        :storage_backend => :filesystem
+        :storage         => {:backend => :filesystem}
       }
     end
 
@@ -40,8 +40,8 @@ module Paperclip
       @options[:default_url]
     end
 
-    def storage_backend
-      @options[:storage_backend]
+    def storage
+      @options[:storage]
     end
   end
 end
