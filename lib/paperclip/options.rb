@@ -2,19 +2,17 @@ module Paperclip
   class Options
     def self.default
       @defaults ||= {
-        :path          => ":rails_root/public/:url",
-        :url           => "system/:class/:attachment/:id_partition/:style/:filename",
-        :default_url   => "system/:class/:attachment/default/:style.jpg",
-        :default_style => :original,
-        :styles        => {}
+        :path            => ":rails_root/public/:url",
+        :url             => "system/:class/:attachment/:id_partition/:style/:filename",
+        :default_url     => "system/:class/:attachment/default/:style.jpg",
+        :default_style   => :original,
+        :styles          => {},
+        :storage_backend => :filesystem
       }
     end
 
     def initialize(options = {})
       @options = self.class.default.merge(options)
-      @options.each do |key, value|
-        raise Paperclip::InvalidOptionError.new unless respond_to?(key)
-      end
     end
 
     def [](key)
@@ -40,6 +38,10 @@ module Paperclip
 
     def default_url
       @options[:default_url]
+    end
+
+    def storage_backend
+      @options[:storage_backend]
     end
   end
 end

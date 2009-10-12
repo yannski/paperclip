@@ -16,8 +16,4 @@
        assert_equal value, options[key]
      end
    end
-
-   should "error if unexpected values are in the hash" do
-     assert_raises(Paperclip::InvalidOptionError){ Paperclip::Options.new(:invalid => :option) }
-   end
  end

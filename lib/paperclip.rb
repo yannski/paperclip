@@ -1,8 +1,10 @@
-require "paperclip/options"
-require "paperclip/interpolations"
-require "paperclip/uploaded_file"
-require "paperclip/processor"
 require "paperclip/attachment"
+require "paperclip/interpolations"
+require "paperclip/options"
+require "paperclip/processor"
+require "paperclip/storage"
+require "paperclip/storage/filesystem"
+require "paperclip/uploaded_file"
 
 module Paperclip
   VERSION = "3.0.0"
@@ -10,6 +12,7 @@ module Paperclip
   class PaperclipError < StandardError; end
   class InfiniteInterpolationError < PaperclipError; end
   class InvalidOptionError < PaperclipError; end
+  class StorageBackendNotFound < PaperclipError; end
 
   def self.included(base)
     File.send(:include, UploadedFile)

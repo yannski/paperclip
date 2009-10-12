@@ -16,7 +16,7 @@ class AttachmentTest < Test::Unit::TestCase
     end
 
     should "define #avatar= on Dummy" do
-      assert Dummy.instance_methods.include?('avatar')
+      assert Dummy.instance_methods.include?('avatar=')
     end
   end
 

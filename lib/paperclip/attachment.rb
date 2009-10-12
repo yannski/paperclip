@@ -1,11 +1,13 @@
 module Paperclip
   class Attachment
-    attr_accessor :name, :options, :model
+    attr_accessor :name, :options, :model, :storage
 
     def initialize(name, model, options = Options.new)
       @name = name
       @model = model
       @options = options
+      @storage = Storage.for(@options.storage_backend)
+      @storage.attachment = self
       set_existing_paths
     end
 
@@ -93,14 +95,14 @@ module Paperclip
 
     def flush_writes
       @queue_for_save.each do |style, file|
-        write(path(style), file)
+        storage.write(path(style), file)
       end
       @queue_for_save = []
     end
 
     def flush_deletes
       @queue_for_delete.each do |path|
-        delete(path)
+        storage.delete(path)
       end
       @queue_for_delete = []
     end
@@ -108,26 +110,7 @@ module Paperclip
     def flush_renames
       return unless present?
       @existing_paths.each do |style, existing_path|
-        rename(existing_path, path(style))
-      end
-    end
-
-    def write(path, file)
-      FileUtils.mkdir_p(File.dirname(path))
-      File.open(path, "w" ) do |f|
-        file.rewind
-        f.write(file.read)
-      end
-    end
-
-    def delete(path)
-      File.delete(path)
-    end
-
-    def rename(src, dst)
-      if src != dst
-        write(dst, File.new(src))
-        delete(src)
+        storage.rename(existing_path, path(style))
       end
     end
   end
