@@ -1,6 +1,5 @@
 require 'rubygems'
 
-gem 'jferris-mocha', '0.9.5.0.1241126838'
 gem 'sqlite3-ruby'
 
 require 'test/unit'
@@ -16,23 +15,12 @@ RAILS_ROOT = ROOT
 RAILS_ENV  = "test"
 
 $LOAD_PATH << File.join(ROOT, 'lib')
-$LOAD_PATH << File.join(ROOT, 'lib', 'paperclip')
-
-require File.join('paperclip')
-
-require 'shoulda_macros/paperclip'
+require 'paperclip'
 
 FIXTURES_DIR = File.join(File.dirname(__FILE__), "fixtures") 
 config = YAML::load(IO.read(File.dirname(__FILE__) + '/database.yml'))
 ActiveRecord::Base.logger = Logger.new(File.dirname(__FILE__) + "/debug.log")
 ActiveRecord::Base.establish_connection(config['test'])
-
-def fake_filesystem!
-  Dir.glob("fakefs/**/*") do |file|
-    data = IO.read(file)
-    FakeFS{ File.open(file[7..-1], "w"){|f| f.write(data) } }
-  end
-end
 
 def temporary_rails_env(new_env)
   old_env = Object.const_defined?("RAILS_ENV") ? RAILS_ENV : nil
