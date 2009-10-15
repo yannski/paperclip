@@ -4,6 +4,8 @@ class AttachmentTest < Test::Unit::TestCase
   def setup
     @now = Time.now
     Time.stubs(:now).returns(@now)
+    Paperclip::Storage.stubs(:for).returns(@storage = fake_storage)
+    @file = fixture_file("image.jpg")
   end
 
   context "No options on a basic attachment on the Dummy class" do
@@ -24,7 +26,7 @@ class AttachmentTest < Test::Unit::TestCase
     setup do
       define_attachment! "Dummy", :avatar
       @dummy = Dummy.new
-      @dummy.avatar = fixture_file("image.jpg")
+      @dummy.avatar = @file
     end
 
     should "assign the file's name to avatar_file_name" do
@@ -40,18 +42,19 @@ class AttachmentTest < Test::Unit::TestCase
     end
 
     should "not store the file on the filesystem yet" do
-      assert ! File.exist?(@dummy.avatar.path)
+      assert_received(@storage, :write){|s| s.never }
     end
 
     should "store the file on the filesystem after the model has been saved" do
       @dummy.save
-      assert File.exist?(@dummy.avatar.path), @dummy.avatar.path
+      assert_received(@storage, :write){|s| s.with(@dummy.avatar.path, @file) }
     end
   end
 
   context "Assigning a StringIO to a standard attachment" do
     setup do
       define_attachment! "Dummy", :avatar
+      Paperclip::Storage.stubs(:for).returns(@storage = fake_storage)
       @dummy = Dummy.new
       @stringio = StringIO.new("This is a file")
       @dummy.avatar = @stringio
@@ -70,62 +73,64 @@ class AttachmentTest < Test::Unit::TestCase
     end
 
     should "not store the file on the filesystem yet" do
-      assert ! File.exist?(@dummy.avatar.path)
+      assert_received(@storage, :write){|s| s.never }
     end
 
     should "store the file on the filesystem after the model has been saved" do
       @dummy.save
-      assert File.exist?(@dummy.avatar.path), @dummy.avatar.path
+      assert_received(@storage, :write){|s| s.with(@dummy.avatar.path, @stringio) }
     end
   end
 
   context "An attachment on a saved model" do
     setup do
       define_attachment! "Dummy", :avatar, :path => "tmp/:class/:attachment/:id_partition/:filename"
+      Paperclip::Storage.stubs(:for).returns(@storage = fake_storage)
+      @file = fixture_file("image.jpg")
       @dummy = Dummy.new
-      @dummy.avatar = fixture_file("image.jpg")
+      @dummy.avatar = @file
       @dummy.save
       @current_path = @dummy.avatar.path
     end
 
     should "not delete the attachment when assigned nil" do
       @dummy.avatar = nil
-      assert File.exists?(@current_path)
+      assert_received(@storage, :delete){|s| s.never }
     end
 
     should "delete the file attachment when assigned nil and saved" do
       @dummy.avatar = nil
       @dummy.save
-      assert ! File.exists?(@current_path)
+      assert_received(@storage, :delete){|s| s.with(@current_path) }
     end
 
     should "delete the file attachment when the model is destroyed" do
       @dummy.destroy
-      assert ! File.exists?(@current_path)
+      assert_received(@storage, :delete){|s| s.with(@current_path) }
     end
 
     should "move the file if the destination path changes" do
       @dummy.id = @dummy.id + 1000
       @expected_path = @dummy.avatar.path
       @dummy.save
-      assert ! File.exists?(@current_path)
-      assert   File.exists?(@expected_path)
+      assert_received(@storage, :rename){|s| s.with(@current_path, @expected_path) }
     end
   end
 
   context "An attachment with a small thumbnail" do
     setup do
+      Paperclip::Storage.stubs(:for).returns(@storage = fake_storage)
+      @file = fixture_file("image.jpg")
       define_attachment! "Dummy", :avatar, :path => "tmp/:class/:attachment/:id_partition/:style/:filename",
                                            :styles => {:small => {:processors => [:null]}}
       @dummy = Dummy.new
-      @dummy.avatar = fixture_file("image.jpg")
+      @dummy.avatar = @file
     end
 
     should "put the files in locations appropriate to the style after save" do
       @dummy.save
-
-      assert File.exists?(@dummy.avatar.path(:original))
-      assert File.exists?(@dummy.avatar.path(:small))
+      assert_received(@storage, :write){|s| s.with(@dummy.avatar.path(:original), @file) }
+      assert_received(@storage, :write){|s| s.with(@dummy.avatar.path(:small), @file) }
     end
 
     should "delete all associated files when the model is destroyed" do
@@ -135,8 +140,8 @@ class AttachmentTest < Test::Unit::TestCase
       
       @dummy.destroy
 
-      assert ! File.exists?(expected_path_original)
-      assert ! File.exists?(expected_path_small)
+      assert_received(@storage, :delete){|s| s.with(expected_path_original) }
+      assert_received(@storage, :delete){|s| s.with(expected_path_small) }
     end
 
     should "delete all associated files when the attachment is set to nil and saved" do
@@ -147,8 +152,8 @@ class AttachmentTest < Test::Unit::TestCase
       @dummy.avatar = nil
       @dummy.save
 
-      assert ! File.exists?(expected_path_original)
-      assert ! File.exists?(expected_path_small)
+      assert_received(@storage, :delete){|s| s.with(expected_path_original) }
+      assert_received(@storage, :delete){|s| s.with(expected_path_small) }
     end
 
     should "move all files if the destination path changes" do
@@ -160,11 +165,9 @@ class AttachmentTest < Test::Unit::TestCase
       expected_path_small    = @dummy.avatar.path(:small)
 
       @dummy.save
-      
-      assert ! File.exists?(current_path_original)
-      assert ! File.exists?(current_path_small)
-      assert   File.exists?(expected_path_original)
-      assert   File.exists?(expected_path_small)
+
+      assert_received(@storage, :rename){|s| s.with(current_path_original, expected_path_original) }
+      assert_received(@storage, :rename){|s| s.with(current_path_small, expected_path_small) }
     end
 
     should "have the small style be different from the original style" do

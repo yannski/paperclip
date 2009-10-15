@@ -1,6 +1,7 @@
 require 'rubygems'
 
 gem 'sqlite3-ruby'
+gem 'jferris-mocha'
 
 require 'test/unit'
 require 'shoulda'
@@ -63,6 +64,16 @@ def fixture_file(name)
   File.new(File.join(FIXTURES_DIR, name))
 end
 
+def fake_storage
+  storage = stub
+  storage.stubs(:attachment=)
+  storage.stubs(:attachment)
+  storage.stubs(:write)
+  storage.stubs(:delete)
+  storage.stubs(:rename)
+  storage
+end
+
 class Paperclip::Null < Paperclip::Processor
   def make
     dst = Tempfile.new(@basename)
@@ -77,4 +88,4 @@ class Paperclip::Null < Paperclip::Processor
 end
 
 FakeFS.activate!
-FakeFS::FileSystem.clone(File.join(File.dirname(__FILE__), "fixtures"))
+FakeFS::FileSystem.clone(FIXTURES_DIR)
