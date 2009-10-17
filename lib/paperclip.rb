@@ -22,7 +22,9 @@ module Paperclip
 
   def has_attached_file(name, options = {})
     include InstanceMethods
-    cattr_accessor :paperclip_definitions
+    self.class.class_eval do
+      attr_accessor :paperclip_definitions
+    end
 
     self.paperclip_definitions ||= {}
     self.paperclip_definitions[name] = Options.new(options)
