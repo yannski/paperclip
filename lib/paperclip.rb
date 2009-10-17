@@ -5,6 +5,7 @@ require "paperclip/processor"
 require "paperclip/storage"
 require "paperclip/storage/filesystem"
 require "paperclip/uploaded_file"
+require "paperclip/validations"
 
 module Paperclip
   VERSION = "3.0.0"
@@ -36,7 +37,7 @@ module Paperclip
 
     after_save     :flush_attachments
     before_destroy :clear_attachment
-    before_destroy :flush_attachments
+    after_destroy  :flush_attachments
   end
 
   module InstanceMethods
