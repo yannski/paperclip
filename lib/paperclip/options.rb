@@ -1,4 +1,7 @@
 module Paperclip
+
+  class InvalidOptionError < PaperclipError; end
+
   class Options
     def self.default
       @defaults ||= {

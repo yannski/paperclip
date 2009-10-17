@@ -8,7 +8,7 @@ class AttachmentTest < Test::Unit::TestCase
     @file = fixture_file("image.jpg")
   end
 
-  context "No options on a basic attachment on the Dummy class" do
+  context "An :avatar attachment on a Dummy class with no options" do
     setup do
       define_attachment! "Dummy", :avatar
     end

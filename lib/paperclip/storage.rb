@@ -1,4 +1,7 @@
 module Paperclip
+
+  class StorageBackendNotFound < PaperclipError; end
+
   class Storage
     attr_accessor :attachment
 
