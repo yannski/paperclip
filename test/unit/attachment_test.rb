@@ -20,6 +20,10 @@ class AttachmentTest < Test::Unit::TestCase
     should "define #avatar= on Dummy" do
       assert Dummy.instance_methods.include?('avatar=')
     end
+
+    should "be able to save normally" do
+      assert Dummy.new.save
+    end
   end
 
   context "Assigning a File to a standard attachment" do
