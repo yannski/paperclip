@@ -40,7 +40,7 @@
 
      should "have a default original style which does nothing" do
        assert_equal [:original], @options[:styles].keys
-       assert_equal({}, @options[:styles][:original])
+       assert_equal({:processors => []}, @options[:styles][:original])
      end
 
      should "have a default storage backend and set of options" do

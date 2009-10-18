@@ -14,8 +14,23 @@ module Paperclip
       }
     end
 
+    def self.default_style
+      @default_style ||= {
+        :processors => [:thumbnail]
+      }
+    end
+
     def initialize(options = {})
       @options = self.class.default.merge(options)
+      normalize_styles
+    end
+
+    def normalize_styles
+      @options[:styles][:original] ||= {:processors => []}
+      defined_styles = @options[:styles].keys - [:original]
+      defined_styles.each do |style|
+        @options[:styles][style] = self.class.default_style.merge(@options[:styles][style])
+      end
     end
 
     def [](key)
