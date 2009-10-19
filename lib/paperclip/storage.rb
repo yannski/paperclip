@@ -23,5 +23,8 @@ module Paperclip
 
     def rename(old_path, new_path)
     end
+
+    class Null < Storage
+    end
   end
 end

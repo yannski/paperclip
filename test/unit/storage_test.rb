@@ -24,15 +24,15 @@ class StorageTest < Test::Unit::TestCase
     assert_equal "12345", storage.attachment
   end
 
-  should "define a write method" do
-    assert Paperclip::Storage.instance_methods.include?("write")
+  should "define a write method that takes 2 arguments" do
+    assert_equal 2, Paperclip::Storage.new.method(:write).arity
   end
 
-  should "define a delete method" do
-    assert Paperclip::Storage.instance_methods.include?("delete")
+  should "define a delete method that takes 1 argument" do
+    assert_equal 1, Paperclip::Storage.new.method(:delete).arity
   end
 
-  should "define a rename method" do
-    assert Paperclip::Storage.instance_methods.include?("rename")
+  should "define a rename method that takes 2 arguments" do
+    assert_equal 2, Paperclip::Storage.new.method(:rename).arity
   end
 end
