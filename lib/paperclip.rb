@@ -36,7 +36,9 @@ module Paperclip
     define_method("#{name}=") do |file|
       attachment_for(name).assign(file)
     end
+  end
 
+  def install_callbacks
     after_save     :flush_attachments
     before_destroy :clear_attachment
     after_destroy  :flush_attachments

@@ -90,7 +90,7 @@ module Paperclip
       end
     end
 
-    def save
+    def commit
       flush_renames
       flush_writes
       flush_deletes

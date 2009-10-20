@@ -41,7 +41,21 @@ ensure
   $VERBOSE = old_verbose
 end
 
-def define_attachment! klass, attachment, options = {}
+class FakeModel
+  attr_accessor :name, :avatar_file_name, :avatar_content_type, :avatar_file_size
+  def name
+    @name ||= "fake"
+  end
+end
+
+def define_attachment! options = {}
+  FakeModel.class_eval do
+    include Paperclip
+    has_attached_file :avatar, options
+  end
+end
+
+def define_active_record_attachment! klass, attachment, options = {}
   ActiveRecord::Base.connection.create_table klass.tableize, :force => true do |table|
     table.column :other, :string
     table.column :"#{attachment}_file_name", :string

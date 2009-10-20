@@ -1,9 +1,9 @@
 require 'test/helper'
 
 class ValdiationsTest < Test::Unit::TestCase
-  context "A model with no validations" do
+  context "An ActiveRecord model with no validations" do
     setup do
-      define_attachment! "Dummy", :avatar
+      define_active_record_attachment! "Dummy", :avatar
       @dummy = Dummy.new
     end
 
@@ -26,7 +26,7 @@ class ValdiationsTest < Test::Unit::TestCase
 
   context "An ActiveRecord model with validations available" do
     setup do
-      define_attachment! "Dummy", :avatar
+      define_active_record_attachment! "Dummy", :avatar
       Dummy.class_eval do
         include Paperclip::Validations::ActiveRecord
       end
