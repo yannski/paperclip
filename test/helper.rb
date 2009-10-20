@@ -53,7 +53,8 @@ def define_attachment! klass, attachment, options = {}
   silence_warnings do
     new_klass = Object.const_set(klass, Class.new(ActiveRecord::Base))
     new_klass.class_eval do
-      extend Paperclip
+      include Paperclip
+      include Paperclip::Validations::ActiveRecord
       has_attached_file attachment, options
     end
     new_klass
@@ -65,26 +66,17 @@ def fixture_file(name)
 end
 
 def fake_storage
-  storage = stub
-  storage.stubs(:attachment=)
-  storage.stubs(:attachment)
+  storage = Paperclip::Storage::Null.new
   storage.stubs(:write)
   storage.stubs(:delete)
   storage.stubs(:rename)
   storage
 end
 
-class Paperclip::Null < Paperclip::Processor
-  def make
-    dst = Tempfile.new(@basename)
-    dst.binmode
-    dst.write(@file.read)
-
-    @file.rewind
-    dst.rewind
-
-    dst
-  end
+def fake_processor
+  processor = Paperclip::Processor::Null.new
+  processor.stubs(:make)
+  processor
 end
 
 FakeFS.activate!

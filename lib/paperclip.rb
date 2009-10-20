@@ -17,6 +17,7 @@ module Paperclip
   def self.included(base)
     File.send(:include, UploadedFile)
     StringIO.send(:include, UploadedFile)
+    base.extend(self)
   end
 
   def has_attached_file(name, options = {})

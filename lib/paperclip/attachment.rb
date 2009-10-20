@@ -14,9 +14,6 @@ module Paperclip
     end
 
     def assign(file)
-      @files_to_save   = {}
-      @files_to_delete = []
-
       self.clear
       return if file.nil?
 
@@ -24,10 +21,14 @@ module Paperclip
       write_model_attribute(:content_type, file.content_type)
       write_model_attribute(:file_size,    file.size)
 
-      @files_to_save = {}
-      options.styles.keys.each do |style|
-        @files_to_save[style] = file
-      end
+      @files_to_save = process(file)
+    end
+
+    def process(file)
+      options.styles.keys.inject({}) do |files, style|
+        files[style] = file
+        files
+      end 
     end
 
     def present?
@@ -71,6 +72,7 @@ module Paperclip
     end
 
     def clear
+      @files_to_save.clear
       if present?
         @files_to_delete = options.styles.keys.map{|key| path(key) }
       end
@@ -99,14 +101,14 @@ module Paperclip
       @files_to_save.each do |style, file|
         storage.write(path(style), file)
       end
-      @files_to_save = []
+      @files_to_save.clear
     end
 
     def flush_deletes
       @files_to_delete.each do |path|
         storage.delete(path)
       end
-      @files_to_delete = []
+      @files_to_delete.clear
     end
 
     def flush_renames
