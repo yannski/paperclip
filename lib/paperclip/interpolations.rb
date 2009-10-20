@@ -101,5 +101,10 @@ module Paperclip
     def style attachment, style
       style || attachment.default_style
     end
+
+    # Return the attachment#name
+    def name attachment, style
+      attachment.model.name if attachment.model.respond_to?(:name)
+    end
   end
 end

@@ -99,4 +99,11 @@ class InterpolationsTest < Test::Unit::TestCase
     value = Paperclip::Interpolations.interpolate(":notreal/:id/:attachment", :attachment, :style)
     assert_equal ":notreal/1234/attachments", value
   end
+
+  should "return the value of the #name accessor" do
+    attachment = mock
+    attachment.expects(:name).returns("name!").times(1)
+    attachment.expects(:model).returns(attachment).times(2)
+    assert_equal "name!", Paperclip::Interpolations.name(attachment, :style)
+  end
 end
