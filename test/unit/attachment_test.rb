@@ -4,9 +4,9 @@ class AttachmentTest < Test::Unit::TestCase
   def setup
     @now = Time.now
     Time.stubs(:now).returns(@now)
-    Paperclip::Storage.stubs(:for).returns(@storage = fake_storage)
-    Paperclip::Processor.stubs(:for).returns(@processor = fake_processor)
     @file = fixture_file("image.jpg")
+    Paperclip::Storage.stubs(:for).returns(@storage = fake_storage)
+    Paperclip::Processor.stubs(:for).returns(@processor = fake_processor(@file))
   end
 
   context "An :avatar attachment on a FakeModel class with no options" do
@@ -136,7 +136,7 @@ class AttachmentTest < Test::Unit::TestCase
       @avatar.commit
       expected_path_original = @avatar.path(:original)
       expected_path_small    = @avatar.path(:small)
-      
+
       @avatar.clear
       @avatar.commit
 
@@ -182,6 +182,42 @@ class AttachmentTest < Test::Unit::TestCase
     should "not contain the other styles' names in the path" do
       assert_no_match %r{\bsmall\b}, @avatar.path(:original)
       assert_no_match %r{\boriginal\b}, @avatar.path(:small)
+    end
+  end
+
+  context "An attachment specifying styles with processors" do
+    setup do
+      @file = fixture_file("image.jpg")
+      @watermark_file = fixture_file("image2.jpg")
+      Paperclip::Processor.stubs(:for).with(:thumbnail).returns(@thumbnail_processor = fake_processor(@file))
+      Paperclip::Processor.stubs(:for).with(:watermark).returns(@watermark_processor = fake_processor(@file))
+      define_attachment! :styles => {
+                           :normal => {:processors => [:watermark, :thumbnail], :geometry => "400x400", :watermark => @watermark_file},
+                           :thumb  => {:geometry => "32x32"}
+                         }
+      @fake = FakeModel.new
+      @fake.avatar = @file
+      @avatar = @fake.avatar
+    end
+
+    should "attempt to get a Thumbnail processor for both styles" do
+      assert_received(Paperclip::Processor, :for){|s| s.with(:thumbnail).times(2) }
+    end
+
+    should "attempt to get a Watermark processor for the :normal style" do
+      assert_received(Paperclip::Processor, :for){|s| s.with(:watermark) }
+    end
+
+    should "attempt to call the Thumbnail processor with :normal's parameters" do
+      assert_received(@thumbnail_processor, :make){|s| s.with(@file, {:geometry => "400x400", :watermark => @watermark_file}, @avatar) }
+    end
+
+    should "attempt to call the Thumbnail processor with :thumb's parameters" do
+      assert_received(@thumbnail_processor, :make){|s| s.with(@file, {:geometry => "32x32"}, @avatar) }
+    end
+
+    should "attempt to call the Watermark processor with :normal's parameters" do
+      assert_received(@watermark_processor, :make){|s| s.with(@file, {:geometry => "400x400", :watermark => @watermark_file}, @avatar) }
     end
   end
 

@@ -24,9 +24,15 @@ module Paperclip
       @files_to_save = process(file)
     end
 
-    def process(file)
+    def process(original_file)
       options.styles.keys.inject({}) do |files, style|
-        files[style] = file
+        style_options = options.styles[style].dup
+        processors = style_options.delete(:processors)
+
+        files[style] = processors.inject(original_file) do |file, name|
+          processor = Processor.for(name)
+          processor.make(file, style_options, self)
+        end
         files
       end 
     end
