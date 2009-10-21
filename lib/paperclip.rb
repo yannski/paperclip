@@ -2,6 +2,7 @@ module Paperclip
   class PaperclipError < StandardError; end
 end
 
+require "paperclip/adapter/active_record"
 require "paperclip/attachment"
 require "paperclip/interpolations"
 require "paperclip/options"
@@ -36,12 +37,8 @@ module Paperclip
     define_method("#{name}=") do |file|
       attachment_for(name).assign(file)
     end
-  end
 
-  def install_callbacks
-    after_save     :flush_attachments
-    before_destroy :clear_attachment
-    after_destroy  :flush_attachments
+    install_attachment_callbacks if respond_to?('install_attachment_callbacks')
   end
 
   module InstanceMethods
@@ -53,7 +50,7 @@ module Paperclip
 
     def flush_attachments
       self.class.paperclip_definitions.keys.each do |name|
-        attachment_for(name).save
+        attachment_for(name).commit
       end
     end
 

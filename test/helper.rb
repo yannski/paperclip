@@ -57,7 +57,7 @@ end
 
 def define_active_record_attachment! klass, attachment, options = {}
   ActiveRecord::Base.connection.create_table klass.tableize, :force => true do |table|
-    table.column :other, :string
+    table.column :name, :string
     table.column :"#{attachment}_file_name", :string
     table.column :"#{attachment}_content_type", :string
     table.column :"#{attachment}_file_size", :integer
@@ -68,7 +68,6 @@ def define_active_record_attachment! klass, attachment, options = {}
     new_klass = Object.const_set(klass, Class.new(ActiveRecord::Base))
     new_klass.class_eval do
       include Paperclip
-      include Paperclip::Validations::ActiveRecord
       has_attached_file attachment, options
     end
     new_klass
@@ -87,9 +86,9 @@ def fake_storage
   storage
 end
 
-def fake_processor
+def fake_processor(file = nil)
   processor = Paperclip::Processor::Null.new
-  processor.stubs(:make)
+  processor.stubs(:make).returns(file)
   processor
 end
 
