@@ -16,7 +16,7 @@ class UploadedFileTest < Test::Unit::TestCase
     end
 
     should "return the size of the file from #size" do
-      assert_equal 900, @file.size
+      assert_equal 1569, @file.size
     end
   end
 
