@@ -6,7 +6,7 @@ module Paperclip
       @name = name
       @model = model
       @options = options
-      @storage = Storage.for(@options[:storage][:backend])
+      @storage = Storage.for(@options.storage[:backend])
       @storage.attachment = self
       @files_to_save   = {}
       @files_to_delete = []
@@ -54,7 +54,7 @@ module Paperclip
     end
 
     def default_style
-      options[:default_style]
+      options.default_style
     end
 
     def read_model_attribute(attribute)
@@ -66,14 +66,14 @@ module Paperclip
     end
 
     def path(style = default_style)
-      Paperclip::Interpolations.interpolate(options[:path], self, style)
+      Paperclip::Interpolations.interpolate(options.path, self, style)
     end
 
     def url(style = default_style)
       if present?
-        Paperclip::Interpolations.interpolate(options[:url], self, style)
+        Paperclip::Interpolations.interpolate(options.url, self, style)
       else
-        Paperclip::Interpolations.interpolate(options[:default_url], self, style)
+        Paperclip::Interpolations.interpolate(options.default_url, self, style)
       end
     end
 

@@ -3,7 +3,7 @@ module Paperclip
   class InvalidOptionError < PaperclipError; end
 
   class Options
-    def self.default
+    def self.defaults
       @defaults ||= {
         :path            => ":rails_root/public/:url",
         :url             => "system/:class/:attachment/:id_partition/:style/:filename",
@@ -21,7 +21,7 @@ module Paperclip
     end
 
     def initialize(options = {})
-      @options = self.class.default.merge(options)
+      @options = self.class.defaults.merge(options)
       normalize_styles
     end
 
