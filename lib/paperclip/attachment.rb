@@ -30,8 +30,7 @@ module Paperclip
         processors = style_options.delete(:processors)
 
         files[style] = processors.inject(original_file) do |file, name|
-          processor = Processor.for(name)
-          processor.make(file, style_options, self)
+          Processor.for(name).make(file, style_options, self)
         end
         files
       end 

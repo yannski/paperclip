@@ -209,15 +209,15 @@ class AttachmentTest < Test::Unit::TestCase
     end
 
     should "attempt to call the Thumbnail processor with :normal's parameters" do
-      assert_received(@thumbnail_processor, :make){|s| s.with(@file, {:geometry => "400x400", :watermark => @watermark_file}, @avatar) }
+      assert_received(@thumbnail_processor, :make){|s| s.with(@file, {:geometry => "400x400", :watermark => @watermark_file}, @avatar).once }
     end
 
     should "attempt to call the Thumbnail processor with :thumb's parameters" do
-      assert_received(@thumbnail_processor, :make){|s| s.with(@file, {:geometry => "32x32"}, @avatar) }
+      assert_received(@thumbnail_processor, :make){|s| s.with(@file, {:geometry => "32x32"}, @avatar).once }
     end
 
     should "attempt to call the Watermark processor with :normal's parameters" do
-      assert_received(@watermark_processor, :make){|s| s.with(@file, {:geometry => "400x400", :watermark => @watermark_file}, @avatar) }
+      assert_received(@watermark_processor, :make){|s| s.with(@file, {:geometry => "400x400", :watermark => @watermark_file}, @avatar).once }
     end
   end
 

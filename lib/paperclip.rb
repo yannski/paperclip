@@ -13,6 +13,7 @@ require "paperclip/uploaded_file"
 require "paperclip/validations"
 
 require "paperclip/geometry"
+require "paperclip/processor/thumbnail"
 
 module Paperclip
   VERSION = "3.0.0"

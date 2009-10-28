@@ -87,7 +87,7 @@ def fake_storage
 end
 
 def fake_processor(file = nil)
-  processor = Paperclip::Processor::Null.new
+  processor = stub
   processor.stubs(:make).returns(file)
   processor
 end
