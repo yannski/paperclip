@@ -64,4 +64,16 @@ class ThumbnailTest < Test::Unit::TestCase
     @processor = Paperclip::Processor::Thumbnail.new(@file, {:geometry => "50x50", :source_options => "-rotate 90"})
     assert_equal '-rotate 90 -resize "50x50"', @processor.transformation
   end
+
+  context "On the live filesystem" do
+    setup    { FakeFS.deactivate! }
+    teardown { FakeFS.activate!   }
+
+    should "return a file containing the transformed image from #make" do
+      @file = fixture_file('image.jpg')
+      @processor = Paperclip::Processor::Thumbnail.new(@file, {:geometry => "50x50"})
+      result = @processor.make
+      assert(fixture_file("image50x50.jpg").read == result.read, "The image thumbnail is not what was expected.")
+    end
+  end
 end

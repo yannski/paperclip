@@ -5,15 +5,15 @@ end
 require "paperclip/adapter/active_record"
 require "paperclip/attachment"
 require "paperclip/interpolations"
+require "paperclip/geometry"
 require "paperclip/options"
 require "paperclip/processor"
+require "paperclip/processor/thumbnail"
 require "paperclip/storage"
 require "paperclip/storage/filesystem"
+require "paperclip/tempfile"
 require "paperclip/uploaded_file"
 require "paperclip/validations"
-
-require "paperclip/geometry"
-require "paperclip/processor/thumbnail"
 
 module Paperclip
   VERSION = "3.0.0"
