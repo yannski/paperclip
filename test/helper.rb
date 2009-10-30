@@ -94,3 +94,4 @@ end
 
 FakeFS.activate!
 FakeFS::FileSystem.clone(FIXTURES_DIR)
+FileUtils.mkdir_p("/tmp")
