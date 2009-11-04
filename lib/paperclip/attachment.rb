@@ -24,18 +24,6 @@ module Paperclip
       @files_to_save = process(file)
     end
 
-    def process(original_file)
-      options.styles.keys.inject({}) do |files, style|
-        style_options = options.styles[style].dup
-        processors = style_options.delete(:processors)
-
-        files[style] = processors.inject(original_file) do |file, name|
-          Processor.for(name).make(file, style_options, self)
-        end
-        files
-      end 
-    end
-
     def present?
       not file_name.nil?
     end
@@ -54,14 +42,6 @@ module Paperclip
 
     def default_style
       options.default_style
-    end
-
-    def read_model_attribute(attribute)
-      @model.send(:"#{name}_#{attribute}")
-    end
-
-    def write_model_attribute(attribute, data)
-      @model.send(:"#{name}_#{attribute}=", data)
     end
 
     def path(style = default_style)
@@ -86,6 +66,56 @@ module Paperclip
       write_model_attribute(:file_size,    nil)
     end
 
+    def commit
+      flush_renames
+      flush_writes
+      flush_deletes
+      set_existing_paths
+    end
+
+    private
+
+    def process(original_file)
+      return unless callback(:"before_#{name}_process")
+      files = {}
+
+      options.styles.keys.each do |style|
+        style_options = options.styles[style].dup
+        files[style]  = process_file(original_file, style, style_options)
+      end 
+      
+      return unless callback(:"after_#{name}_process")
+      files
+    end
+
+    def process_file(original_file, style, style_options)
+      return unless callback(:"before_#{name}_#{style}_process")
+
+      processors = style_options.delete(:processors)
+      files = processors.inject(original_file) do |file, name|
+        Processor.for(name).make(file, style_options, self)
+      end
+      
+      return unless callback(:"after_#{name}_#{style}_process")
+      files
+    end
+
+    def callback(callback_name)
+      if model.respond_to?(callback_name)
+        model.send(callback_name, model) != false
+      else
+        true
+      end
+    end
+
+    def read_model_attribute(attribute)
+      @model.send(:"#{name}_#{attribute}")
+    end
+
+    def write_model_attribute(attribute, data)
+      @model.send(:"#{name}_#{attribute}=", data)
+    end
+
     def set_existing_paths
       @existing_paths = {}
       return unless present?
@@ -93,13 +123,6 @@ module Paperclip
         hash[key] = path(key)
         hash
       end
-    end
-
-    def commit
-      flush_renames
-      flush_writes
-      flush_deletes
-      set_existing_paths
     end
 
     def flush_writes

@@ -255,4 +255,60 @@ class AttachmentTest < Test::Unit::TestCase
     @fake = FakeModel.new
     assert_equal "/square/file.jpg", @fake.avatar.path
   end
+
+  should "call before and after callback methods defined on the model for the whole attachment" do
+    define_attachment!
+    @fake = FakeModel.new
+    @fake.stubs(:before_avatar_process)
+    @fake.stubs(:after_avatar_process)
+
+    @fake.avatar = @file
+
+    assert_received(@fake, :before_avatar_process){|f| f.with(@fake) }
+    assert_received(@fake, :after_avatar_process){|f| f.with(@fake) }
+  end
+
+  should "call two special callback methods defined on the model for each style" do
+    define_attachment! :styles => {:one => {}, :two => {}}
+    @fake = FakeModel.new
+    @fake.stubs(:before_avatar_one_process)
+    @fake.stubs(:before_avatar_two_process)
+    @fake.stubs(:after_avatar_one_process)
+    @fake.stubs(:after_avatar_two_process)
+
+    @fake.avatar = @file
+
+    assert_received(@fake, :before_avatar_one_process){|f| f.with(@fake) }
+    assert_received(@fake, :before_avatar_two_process){|f| f.with(@fake) }
+    assert_received(@fake, :after_avatar_one_process){|f| f.with(@fake) }
+    assert_received(@fake, :after_avatar_two_process){|f| f.with(@fake) }
+  end
+
+  should "halt processing when attachment callback returns false" do
+    define_attachment! :styles => {:one => {}, :two => {}}
+    @fake = FakeModel.new
+    @fake.stubs(:before_avatar_process).returns(false)
+    @fake.stubs(:after_avatar_process).returns(false)
+
+    @fake.avatar = @file
+
+    assert_received(@fake, :before_avatar_process){|f| f.with(@fake) }
+    assert_received(@fake, :after_avatar_process){|f| f.never }
+  end
+
+  should "halt processing when style callback returns false" do
+    define_attachment! :styles => {:one => {}, :two => {}}
+    @fake = FakeModel.new
+    @fake.stubs(:before_avatar_one_process).returns(false)
+    @fake.stubs(:before_avatar_two_process).returns(false)
+    @fake.stubs(:after_avatar_one_process).returns(false)
+    @fake.stubs(:after_avatar_two_process).returns(false)
+
+    @fake.avatar = @file
+
+    assert_received(@fake, :before_avatar_one_process){|f| f.with(@fake) }
+    assert_received(@fake, :before_avatar_two_process){|f| f.with(@fake) }
+    assert_received(@fake, :after_avatar_one_process){|f| f.never }
+    assert_received(@fake, :after_avatar_two_process){|f| f.never }
+  end
 end
