@@ -239,9 +239,16 @@ module Paperclip
         attachment_for(name).file?
       end
 
-      validates_each(name) do |record, attr, value|
-        attachment = record.attachment_for(name)
-        attachment.send(:flush_errors) unless attachment.valid?
+      if Object.const_defined?("Validatable")
+        validates_each name, :logic => lambda {
+          attachment = attachment_for(name)
+          attachment.send(:flush_errors) unless attachment.valid?
+        }
+      else
+        validates_each(name) do |record, attr, value|
+          attachment = record.attachment_for(name)
+          attachment.send(:flush_errors) unless attachment.valid?
+        end
       end
     end
 
