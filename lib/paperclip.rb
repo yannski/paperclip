@@ -57,6 +57,7 @@ module Paperclip
     #   programs if they are not visible to Rails the system's search path. Defaults to 
     #   nil, which uses the first executable found in the user's search path.
     # * image_magick_path: Deprecated alias of command_path.
+    # * logger: which logger to use. Defaults to ActiveRecord's logger.
     def options
       @options ||= {
         :whiny             => true,
@@ -64,7 +65,8 @@ module Paperclip
         :command_path      => nil,
         :log               => true,
         :log_command       => false,
-        :swallow_stderr    => true
+        :swallow_stderr    => true,
+        :logger            => ActiveRecord::Base.logger
       }
     end
 
@@ -130,8 +132,8 @@ module Paperclip
       logger.info("[paperclip] #{message}") if logging?
     end
 
-    def logger #:nodoc:
-      ActiveRecord::Base.logger
+    def logger
+      options[:logger]
     end
 
     def logging? #:nodoc:
